@@ -99,15 +99,18 @@ async function login(ctx: RouteCtx): Promise<HttpResponse> {
     throw new ApiError(403, "This account cannot sign in from this portal.");
   }
 
-  const existing = await queryOne("SELECT COUNT(*) AS n FROM sessions WHERE user_id = ?", [user["id"]]);
-  if (existing && num(existing["n"]) > 0) {
-    await securityEvent(
-      "LOGIN_BLOCKED",
-      str(user["id"]),
-      str(user["role"]),
-      `Already logged in — blocked sign-in from ${portal} portal`
-    );
-    throw new ApiError(409, "You are already signed in on another device. Please log out there first.");
+  // Single-device restriction: only for students (staff/admin can use multiple devices)
+  if (str(user["role"]) === "STUDENT") {
+    const existing = await queryOne("SELECT COUNT(*) AS n FROM sessions WHERE user_id = ?", [user["id"]]);
+    if (existing && num(existing["n"]) > 0) {
+      await securityEvent(
+        "LOGIN_BLOCKED",
+        str(user["id"]),
+        str(user["role"]),
+        `Already logged in — blocked sign-in from ${portal} portal`
+      );
+      throw new ApiError(409, "You are already signed in on another device. Please log out there first.");
+    }
   }
 
   recordSuccess(userId, ctx.ip);
