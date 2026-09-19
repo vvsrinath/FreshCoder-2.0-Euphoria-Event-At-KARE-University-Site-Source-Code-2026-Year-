@@ -10,6 +10,9 @@ const env = (import.meta as unknown as { env?: Record<string, string> }).env ?? 
 const EXPLICIT_URL = env.VITE_API_BASE_URL || '';
 const IS_PROD = typeof import.meta !== 'undefined' && (import.meta as { env?: { MODE?: string } }).env?.MODE === 'production';
 
+// In production on Netlify, call the function URL directly (bypasses redirect issues)
+const API_BASE = EXPLICIT_URL || (IS_PROD ? '/.netlify/functions/api' : '');
+
 const TOKEN_KEY = 'fc_session_token';
 
 export function getToken(): string | null {
@@ -41,8 +44,8 @@ export class ApiRequestError extends Error {
 async function request<T>(method: string, url: string, body?: unknown): Promise<T> {
   const token = getToken();
 
-  if (EXPLICIT_URL || IS_PROD) {
-    const target = `${EXPLICIT_URL}${url}`;
+  if (API_BASE || IS_PROD) {
+    const target = `${API_BASE}${url}`;
     const response = await fetch(target, {
       method,
       headers: {
