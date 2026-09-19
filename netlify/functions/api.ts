@@ -37,15 +37,7 @@ export async function dispatchRequest(method: string, absolutePath: string, enve
 }
 
 export const handler: Handler = async (event) => {
-  // Netlify redirect rewrites /api/* → /.netlify/functions/api/:splat
-  // Strip the function prefix so route patterns (/api/...) match correctly
-  let path = event.path;
-  if (path.startsWith("/.netlify/functions/api")) {
-    path = path.replace("/.netlify/functions/api", "") || "/";
-    if (!path.startsWith("/api/")) path = "/api" + path;
-  }
-
-  const response = await dispatchRequest(event.httpMethod, path, {
+  const response = await dispatchRequest(event.httpMethod, event.path, {
     headers: (event.headers as Record<string, string | undefined>) ?? {},
     rawBody: event.body ?? null,
     isBase64Encoded: event.isBase64Encoded ?? false,
@@ -53,7 +45,7 @@ export const handler: Handler = async (event) => {
   });
   return {
     statusCode: response.statusCode,
-    headers: response.headers,
+    headers: { ...response.headers, "Access-Control-Allow-Origin": "*" },
     body: response.body,
   };
 };

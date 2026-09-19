@@ -1,23 +1,8 @@
 # Netlify deployment for Fresh Coders 2.0 — Euphoria 2026 platform.
-# Builds the Vite React app as static, with a TypeScript Netlify Function
-# backend that talks to Turso (libSQL).
 [build]
-  command = "npm run build"
+  command = "npm run build && cp dist/index.html dist/404.html"
   publish = "dist"
   functions = "netlify/functions"
 
 [build.environment]
   NODE_VERSION = "20"
-
-# API: route /api/* to the Netlify Function (processed BEFORE SPA fallback)
-[[redirects]]
-  from = "/api/*"
-  to = "/.netlify/functions/api/:splat"
-  status = 200
-  force = true
-
-# SPA fallback: everything else serves index.html
-[[redirects]]
-  from = "/*"
-  to = "/index.html"
-  status = 200
