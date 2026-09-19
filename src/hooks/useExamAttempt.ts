@@ -29,6 +29,12 @@ export interface ExamState {
   lockReason: string | null;
   submitted: false | SubmitReason;
   submitting: boolean;
+  /** Proctoring: number of fullscreen/tab violations detected. */
+  violations: number;
+  /** Proctoring: true when a violation warning should be shown. */
+  showViolationWarning: boolean;
+  /** Proctoring: the most recent violation message. */
+  violationMessage: string;
 }
 
 export function useExamAttempt(testId: string) {
@@ -47,7 +53,10 @@ export function useExamAttempt(testId: string) {
     staffLocked: false,
     lockReason: null,
     submitted: false,
-    submitting: false
+    submitting: false,
+    violations: 0,
+    showViolationWarning: false,
+    violationMessage: ''
   });
 
   const stateRef = useRef(state);
@@ -200,39 +209,103 @@ export function useExamAttempt(testId: string) {
     }
   }, []);
 
-  // Monitoring signals. These are observations, not cheating prevention.
+  // --- Proctoring: fullscreen enforcement + violation tracking ---
+  const requestFullscreen = useCallback(() => {
+    if (!document.fullscreenElement) {
+      document.documentElement.requestFullscreen?.().catch(() => undefined);
+    }
+  }, []);
+
+  const dismissWarning = useCallback(() => {
+    setState((prev) => ({ ...prev, showViolationWarning: false }));
+  }, []);
+
+  // Auto-request fullscreen once the attempt loads.
+  useEffect(() => {
+    if (state.attemptId && !state.submitted) {
+      // Small delay so the DOM is ready.
+      const t = window.setTimeout(requestFullscreen, 300);
+      return () => window.clearTimeout(t);
+    }
+  }, [state.attemptId, state.submitted, requestFullscreen]);
+
+  // Monitoring signals. These are observations + enforcement.
   useEffect(() => {
     const report = (type: string, detail: string) => {
       const snapshot = stateRef.current;
       if (!snapshot.attemptId || snapshot.submitted) return;
       api.reportEvent(type, detail, snapshot.attemptId).catch(() => undefined);
     };
-    const onVisibility = () =>
-    report('TAB_VISIBILITY_CHANGE', document.hidden ? 'Tab hidden' : 'Tab visible');
-    const onFullscreen = () => {
-      if (!document.fullscreenElement) report('FULLSCREEN_EXIT', 'Left fullscreen mode');
+    const bumpViolation = (message: string) => {
+      setState((prev) => ({
+        ...prev,
+        violations: prev.violations + 1,
+        showViolationWarning: true,
+        violationMessage: message
+      }));
     };
+
+    const onVisibility = () => {
+      if (document.hidden) {
+        report('TAB_VISIBILITY_CHANGE', 'Tab hidden — exam left focus');
+        bumpViolation('You switched tabs or windows. This has been reported to the examiner.');
+      }
+    };
+
+    const onFullscreen = () => {
+      if (!document.fullscreenElement && !stateRef.current.submitted) {
+        report('FULLSCREEN_EXIT', 'Left fullscreen mode');
+        bumpViolation('You exited fullscreen. The exam must be taken in fullscreen mode.');
+        // Re-request fullscreen after a short delay.
+        window.setTimeout(() => {
+          if (!document.fullscreenElement && !stateRef.current.submitted) {
+            document.documentElement.requestFullscreen?.().catch(() => undefined);
+          }
+        }, 500);
+      }
+    };
+
     const onContextMenu = (e: MouseEvent) => {
       e.preventDefault();
       report('CONTEXT_MENU_BLOCKED', 'Right click blocked');
     };
+
     const onBeforeUnload = (e: BeforeUnloadEvent) => {
       if (stateRef.current.submitted) return;
       report('NAVIGATION_ATTEMPT', 'Tried to leave the exam page');
       e.preventDefault();
       e.returnValue = '';
     };
+
+    // Block keyboard shortcuts that could leave the page (Alt+Tab, Ctrl+Tab, Ctrl+W, F11, etc.)
+    const onKeyDown = (e: KeyboardEvent) => {
+      if (stateRef.current.submitted) return;
+      // Ctrl+Tab, Ctrl+W, Ctrl+T, Ctrl+N, Alt+Tab, F11
+      const blocked = (
+        (e.ctrlKey && ['Tab', 'w', 't', 'n', 'Shift'].includes(e.key)) ||
+        (e.altKey && e.key === 'Tab') ||
+        e.key === 'F11'
+      );
+      if (blocked) {
+        e.preventDefault();
+        report('NAVIGATION_ATTEMPT', `Blocked key: ${e.key}`);
+        bumpViolation('Keyboard shortcuts that leave the exam are blocked.');
+      }
+    };
+
     document.addEventListener('visibilitychange', onVisibility);
     document.addEventListener('fullscreenchange', onFullscreen);
     document.addEventListener('contextmenu', onContextMenu);
     window.addEventListener('beforeunload', onBeforeUnload);
+    window.addEventListener('keydown', onKeyDown);
     return () => {
       document.removeEventListener('visibilitychange', onVisibility);
       document.removeEventListener('fullscreenchange', onFullscreen);
       document.removeEventListener('contextmenu', onContextMenu);
       window.removeEventListener('beforeunload', onBeforeUnload);
+      window.removeEventListener('keydown', onKeyDown);
     };
   }, []);
 
-  return { state, setAnswer, goTo, toggleFlag, lockAnswer, requestEdit, submit };
+  return { state, setAnswer, goTo, toggleFlag, lockAnswer, requestEdit, submit, dismissWarning };
 }

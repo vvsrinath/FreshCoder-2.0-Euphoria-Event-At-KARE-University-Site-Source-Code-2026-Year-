@@ -5,7 +5,6 @@ import {
   ArrowRightIcon,
   CheckCircle2Icon,
   LockIcon,
-  MaximizeIcon,
   PencilLineIcon,
   ShieldAlertIcon,
   XIcon,
@@ -29,7 +28,7 @@ export function Exam() {
   const { id = '' } = useParams();
   const navigate = useNavigate();
   const { logout } = useAuth();
-  const { state, setAnswer, goTo, toggleFlag, lockAnswer, requestEdit, submit } = useExamAttempt(id);
+  const { state, setAnswer, goTo, toggleFlag, lockAnswer, requestEdit, submit, dismissWarning } = useExamAttempt(id);
   const [lockedDialog, setLockedDialog] = useState(false);
   const [editDialog, setEditDialog] = useState(false);
   const [editReason, setEditReason] = useState('');
@@ -170,6 +169,16 @@ export function Exam() {
           </div>
 
           <div className="flex items-center gap-6">
+            {/* Violation Counter */}
+            {state.violations > 0 && (
+              <div className="flex items-center gap-2 rounded-xl border border-amber-300/60 bg-amber-50 px-3 py-2">
+                <ShieldAlertIcon className="h-4 w-4 text-amber-600" />
+                <span className="text-xs font-bold text-amber-700">
+                  {state.violations} violation{state.violations > 1 ? 's' : ''}
+                </span>
+              </div>
+            )}
+
             {/* Countdown Timer with Glow */}
             <div className="flex items-center gap-3 rounded-xl border border-white/10 bg-white/5 px-4 py-2">
               <ExamTimer
@@ -178,15 +187,6 @@ export function Exam() {
                 onExpire={() => submit('TIME_EXPIRED')}
               />
             </div>
-
-            <button
-              type="button"
-              onClick={() => document.documentElement.requestFullscreen?.().catch(() => undefined)}
-              className="rounded-lg p-2 text-slate-400 hover:bg-white/10 hover:text-white transition-colors"
-              aria-label="Enter fullscreen"
-            >
-              <MaximizeIcon className="h-4 w-4" />
-            </button>
 
             {/* End Test Button */}
             <button
@@ -393,6 +393,32 @@ export function Exam() {
             await submit('NORMAL');
           }}
         />
+
+        {/* Violation Warning Modal */}
+        {state.showViolationWarning && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-navy-950/70 backdrop-blur-sm p-4">
+            <div className="w-full max-w-sm rounded-3xl bg-white p-7 text-center shadow-2xl animate-in fade-in zoom-in-95">
+              <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-amber-50 text-amber-600 border border-amber-200">
+                <ShieldAlertIcon className="h-7 w-7" />
+              </div>
+              <h3 className="text-xl font-extrabold text-navy-900">Exam Rule Violation</h3>
+              <p className="mt-2 text-sm text-slate-600 leading-relaxed">
+                {state.violationMessage}
+              </p>
+              <p className="mt-3 text-xs text-amber-600 font-semibold">
+                All violations are recorded and reported to the examiner.
+                {state.violations >= 3 && ' Continued violations may result in automatic submission.'}
+              </p>
+              <button
+                type="button"
+                onClick={dismissWarning}
+                className="mt-6 w-full rounded-xl bg-[#0f172a] py-3 text-sm font-bold text-white shadow-md hover:bg-slate-800"
+              >
+                I Understand — Return to Exam
+              </button>
+            </div>
+          </div>
+        )}
       </div>
     </DesktopOnlyGate>
   );
