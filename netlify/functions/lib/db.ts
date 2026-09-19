@@ -1,5 +1,5 @@
 /** Turso (libsql) access helpers. All queries are parameterised. */
-import { createClient, type Client, type InValue } from "@libsql/client";
+import { createClient, type Client, type InValue } from "@libsql/client/web";
 import { config } from "./config";
 import { utcNow } from "./utils";
 
