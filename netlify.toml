@@ -6,3 +6,18 @@
 
 [build.environment]
   NODE_VERSION = "20"
+  SECRETS_SCAN_OMIT_PATHS = "src/backend/*,docs/*,netlify.env.example,README.md,src/README.md"
+
+# API routes FIRST — force=true ensures this runs before Netlify's default SPA redirect
+[[redirects]]
+  from = "/api/*"
+  to = "/.netlify/functions/api/:splat"
+  status = 200
+  force = true
+
+# SPA fallback (Netlify also adds this automatically for Vite, but we define it explicitly)
+[[redirects]]
+  from = "/*"
+  to = "/index.html"
+  status = 200
+
