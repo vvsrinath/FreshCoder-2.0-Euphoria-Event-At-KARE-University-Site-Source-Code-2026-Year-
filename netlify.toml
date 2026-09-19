@@ -9,7 +9,14 @@
 [build.environment]
   NODE_VERSION = "20"
 
-# SPA fallback: serve index.html for any route that isn't a static file or /api/*
+# API: route /api/* to the Netlify Function (processed BEFORE SPA fallback)
+[[redirects]]
+  from = "/api/*"
+  to = "/.netlify/functions/api/:splat"
+  status = 200
+  force = true
+
+# SPA fallback: everything else serves index.html
 [[redirects]]
   from = "/*"
   to = "/index.html"
