@@ -135,6 +135,9 @@ export function useExamAttempt(testId: string) {
     []
   );
 
+  const submitRef = useRef(submit);
+  submitRef.current = submit;
+
   // Server-authoritative control channel: lock, force submit, edit grants.
   useEffect(() => {
     const id = window.setInterval(async () => {
@@ -314,6 +317,7 @@ export function useExamAttempt(testId: string) {
     };
 
     // Banking-style: block all DevTools / navigation / clipboard / print shortcuts
+    // USE CAPTURE PHASE (true) — fires before browser processes the event
     const onKeyDown = (e: KeyboardEvent) => {
       if (stateRef.current.submitted) return;
 
@@ -322,23 +326,18 @@ export function useExamAttempt(testId: string) {
       const shift = e.shiftKey;
       const alt = e.altKey;
 
-      // F12 — DevTools
-      if (key === 'F12') {
+      // Block ALL function keys (F1-F12) — covers F12 DevTools, F5 reload, etc.
+      if (/^F\d{1,2}$/.test(key)) {
         e.preventDefault(); e.stopPropagation();
-        report('DEVTOOLS_ATTEMPT', 'F12 blocked');
-        bumpViolation('Developer Tools access is blocked.');
-        return;
-      }
-      // F5 / F11 / F10 / Shift+F5 — reload / fullscreen / menu
-      if (key === 'F5' || key === 'F11' || key === 'F10' || (shift && key === 'F5')) {
-        e.preventDefault(); e.stopPropagation();
-        report('NAVIGATION_ATTEMPT', `Blocked key: ${key}`);
-        bumpViolation('This key is blocked during the exam.');
+        e.stopImmediatePropagation();
+        report('DEVTOOLS_ATTEMPT', `Blocked function key: ${key}`);
+        bumpViolation(`${key} is blocked during the exam.`);
         return;
       }
       // Esc — exit fullscreen → aggressively re-enter
       if (key === 'Escape') {
         e.preventDefault(); e.stopPropagation();
+        e.stopImmediatePropagation();
         report('NAVIGATION_ATTEMPT', 'Escape blocked');
         window.setTimeout(() => {
           if (!document.fullscreenElement && !stateRef.current.submitted) {
@@ -347,31 +346,39 @@ export function useExamAttempt(testId: string) {
         }, 100);
         return;
       }
-      // Ctrl/Cmd + key combos
-      if (ctrl && !alt) {
+      // Ctrl/Cmd + key combos — block everything dangerous
+      if (ctrl) {
         const blockList = [
-          'Tab', 'w', 't', 'n', 'r', 'R', // navigation
-          'i', 'I', 'j', 'J', 'c', 'C',   // DevTools / inspect
-          'u', 'U',                          // view source
-          's', 'S',                          // save page
-          'p', 'P',                          // print
-          'l', 'L',                          // lock screen
-          'f', 'F',                          // find (could leak questions)
+          'Tab', 'w', 't', 'n', 'r', 'R',
+          'i', 'I', 'j', 'J', 'c', 'C',
+          'u', 'U', 's', 'S', 'p', 'P',
+          'l', 'L', 'f', 'F', 'h', 'H',
+          'a', 'A', 'b', 'B', 'd', 'D',
+          'g', 'G', 'o', 'O',
         ];
         if (shift) {
-          // Ctrl+Shift+I/J/C — DevTools, Ctrl+Shift+R — hard reload
-          blockList.push('i', 'I', 'j', 'J', 'c', 'C', 'r', 'R', 'Delete');
+          blockList.push('i', 'I', 'j', 'J', 'c', 'C', 'r', 'R', 'Delete', 'N');
         }
         if (blockList.includes(key)) {
           e.preventDefault(); e.stopPropagation();
+          e.stopImmediatePropagation();
           report('DEVTOOLS_ATTEMPT', `Blocked Ctrl+${shift ? 'Shift+' : ''}${key}`);
           bumpViolation('This keyboard shortcut is blocked during the exam.');
           return;
         }
       }
-      // PrintScreen — screenshot
+      // Alt key combos
+      if (alt) {
+        e.preventDefault(); e.stopPropagation();
+        e.stopImmediatePropagation();
+        report('NAVIGATION_ATTEMPT', `Blocked Alt+${key}`);
+        bumpViolation('Alt shortcuts are blocked during the exam.');
+        return;
+      }
+      // PrintScreen
       if (key === 'PrintScreen') {
         e.preventDefault(); e.stopPropagation();
+        e.stopImmediatePropagation();
         report('SCREEN_CAPTURE', 'PrintScreen blocked');
         bumpViolation('Screenshots are blocked during the exam.');
         return;
@@ -404,66 +411,131 @@ export function useExamAttempt(testId: string) {
       e.preventDefault();
     };
 
-    // Banking-style DevTools detection (runs every 2 seconds)
+    // Banking-style DevTools detection (runs every 500ms for fast response)
     let devtoolsDetected = false;
+    let devtoolsViolationCount = 0;
     const detectDevTools = () => {
       if (stateRef.current.submitted) return;
 
       // Method 1: Window size difference (detects docked DevTools)
       const widthDiff = window.outerWidth - window.innerWidth;
       const heightDiff = window.outerHeight - window.innerHeight;
-      const threshold = 200;
+      const threshold = 150;
 
       const isOpen = widthDiff > threshold || heightDiff > threshold;
 
       if (isOpen && !devtoolsDetected) {
         devtoolsDetected = true;
-        report('DEVTOOLS_ATTEMPT', `DevTools detected via window size diff (${widthDiff}x${heightDiff})`);
-        bumpViolation('Developer Tools detected! Close DevTools to continue the exam.');
+        devtoolsViolationCount++;
+        report('DEVTOOLS_ATTEMPT', `DevTools detected via window size (${widthDiff}x${heightDiff}) #${devtoolsViolationCount}`);
+        bumpViolation('Developer Tools detected! Close DevTools immediately.');
         setState((prev) => ({ ...prev, devtoolsOpen: true }));
+
+        // Auto-submit after 3 DevTools detections
+        if (devtoolsViolationCount >= 3) {
+          report('DEVTOOLS_AUTO_SUBMIT', `Auto-submit after ${devtoolsViolationCount} DevTools violations`);
+          bumpViolation('Too many DevTools violations. Auto-submitting your exam.');
+          // Trigger auto-submit
+          setTimeout(() => {
+            if (!stateRef.current.submitted) {
+              submitRef.current('FORCE_SUBMITTED');
+            }
+          }, 2000);
+        }
       } else if (!isOpen && devtoolsDetected) {
-        // DevTools closed — resume exam
         devtoolsDetected = false;
         setState((prev) => ({ ...prev, devtoolsOpen: false }));
       }
 
-      // Method 2: Debugger timing (detects undocked DevTools) — only if not already detected
+      // Method 2: Debugger timing (detects undocked DevTools)
       if (!devtoolsDetected) {
         const start = performance.now();
         // eslint-disable-next-line no-debugger
         debugger;
         const elapsed = performance.now() - start;
-        if (elapsed > 100) {
+        if (elapsed > 80) {
           devtoolsDetected = true;
-          report('DEVTOOLS_ATTEMPT', 'DevTools detected via debugger timing');
-          bumpViolation('Developer Tools detected! Close DevTools to continue the exam.');
+          devtoolsViolationCount++;
+          report('DEVTOOLS_ATTEMPT', `DevTools detected via debugger timing #${devtoolsViolationCount}`);
+          bumpViolation('Developer Tools detected! Close DevTools immediately.');
           setState((prev) => ({ ...prev, devtoolsOpen: true }));
+
+          if (devtoolsViolationCount >= 3) {
+            report('DEVTOOLS_AUTO_SUBMIT', `Auto-submit after ${devtoolsViolationCount} DevTools violations`);
+            bumpViolation('Too many DevTools violations. Auto-submitting your exam.');
+            setTimeout(() => {
+              if (!stateRef.current.submitted) {
+                submitRef.current('FORCE_SUBMITTED');
+              }
+            }, 2000);
+          }
         }
       }
     };
 
-    const devtoolsInterval = window.setInterval(detectDevTools, 2000);
+    const devtoolsInterval = window.setInterval(detectDevTools, 500);
 
-    document.addEventListener('visibilitychange', onVisibility);
-    document.addEventListener('fullscreenchange', onFullscreen);
-    document.addEventListener('contextmenu', onContextMenu);
-    window.addEventListener('beforeunload', onBeforeUnload);
-    window.addEventListener('keydown', onKeyDown);
-    document.addEventListener('paste', onPaste);
-    document.addEventListener('copy', onCopy);
-    document.addEventListener('cut', onCut);
-    document.addEventListener('dragstart', onDragStart);
+    // Override console methods to make DevTools console useless
+    const noop = () => {};
+    const origLog = console.log;
+    const origWarn = console.warn;
+    const origError = console.error;
+    const origInfo = console.info;
+    const origDebug = console.debug;
+    const origTable = console.table;
+    const origClear = console.clear;
+    console.log = noop;
+    console.warn = noop;
+    console.error = noop;
+    console.info = noop;
+    console.debug = noop;
+    console.table = noop;
+    console.clear = noop;
+
+    // Disable debugger statement override (prevent devs bypass)
+    const origDefineProperty = Object.defineProperty;
+
+    // USE CAPTURE PHASE for all event listeners (fires before browser)
+    document.addEventListener('visibilitychange', onVisibility, true);
+    document.addEventListener('fullscreenchange', onFullscreen, true);
+    document.addEventListener('contextmenu', onContextMenu, true);
+    window.addEventListener('beforeunload', onBeforeUnload, true);
+    window.addEventListener('keydown', onKeyDown, true);
+    window.addEventListener('keyup', (e: KeyboardEvent) => {
+      e.stopPropagation();
+      e.stopImmediatePropagation();
+    }, true);
+    window.addEventListener('keypress', (e: KeyboardEvent) => {
+      e.preventDefault();
+      e.stopPropagation();
+      e.stopImmediatePropagation();
+    }, true);
+    document.addEventListener('paste', onPaste, true);
+    document.addEventListener('copy', onCopy, true);
+    document.addEventListener('cut', onCut, true);
+    document.addEventListener('dragstart', onDragStart, true);
+    document.addEventListener('selectstart', (e) => {
+      e.preventDefault();
+    }, true);
     return () => {
       window.clearInterval(devtoolsInterval);
-      document.removeEventListener('visibilitychange', onVisibility);
-      document.removeEventListener('fullscreenchange', onFullscreen);
-      document.removeEventListener('contextmenu', onContextMenu);
-      window.removeEventListener('beforeunload', onBeforeUnload);
-      window.removeEventListener('keydown', onKeyDown);
-      document.removeEventListener('paste', onPaste);
-      document.removeEventListener('copy', onCopy);
-      document.removeEventListener('cut', onCut);
-      document.removeEventListener('dragstart', onDragStart);
+      // Restore console
+      console.log = origLog;
+      console.warn = origWarn;
+      console.error = origError;
+      console.info = origInfo;
+      console.debug = origDebug;
+      console.table = origTable;
+      console.clear = origClear;
+      document.removeEventListener('visibilitychange', onVisibility, true);
+      document.removeEventListener('fullscreenchange', onFullscreen, true);
+      document.removeEventListener('contextmenu', onContextMenu, true);
+      window.removeEventListener('beforeunload', onBeforeUnload, true);
+      window.removeEventListener('keydown', onKeyDown, true);
+      document.removeEventListener('paste', onPaste, true);
+      document.removeEventListener('copy', onCopy, true);
+      document.removeEventListener('cut', onCut, true);
+      document.removeEventListener('dragstart', onDragStart, true);
     };
   }, []);
 
