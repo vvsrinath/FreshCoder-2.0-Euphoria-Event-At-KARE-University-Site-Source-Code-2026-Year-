@@ -96,8 +96,8 @@ export const api = {
   }),
   submitAttempt: (attemptId: string, answers: Record<string, string>, reason: string) =>
   request<any>('POST', `/api/student/attempts/${attemptId}/submit`, { answers, reason }),
-  requestEdit: (attemptId: string, questionId: string, reason: string) =>
-  request<any>('POST', `/api/student/attempts/${attemptId}/edit-request`, { questionId, reason }),
+  requestEdit: (attemptId: string, questionId: string, reason: string, value: string) =>
+  request<any>('POST', `/api/student/attempts/${attemptId}/edit-request`, { questionId, reason, value }),
   studentResults: () => request<any>('GET', '/api/student/results'),
 
   // ---- staff ----

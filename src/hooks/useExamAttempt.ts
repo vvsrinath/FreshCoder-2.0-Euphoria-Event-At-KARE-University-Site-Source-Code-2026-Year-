@@ -184,26 +184,23 @@ export function useExamAttempt(testId: string) {
   }, []);
 
   const lockAnswer = useCallback(async (questionId: string) => {
-    const snapshot = stateRef.current;
-    if (!snapshot.attemptId) return false;
-    try {
-      await api.lockAnswer(snapshot.attemptId, questionId, snapshot.answers[questionId] ?? '');
-      setState((prev) => ({
-        ...prev,
-        meta: { ...prev.meta, [questionId]: { locked: true, editGranted: false } }
-      }));
-      return true;
-    } catch (err) {
-      toast.error((err as Error).message);
-      return false;
-    }
+    // Answers are stored locally only — NOT sent to DB during the exam.
+    // They are only sent to DB on submit or when an edit is requested.
+    setState((prev) => ({
+      ...prev,
+      meta: { ...prev.meta, [questionId]: { locked: true, editGranted: false } }
+    }));
+    return true;
   }, []);
 
   const requestEdit = useCallback(async (questionId: string, reason: string) => {
     const snapshot = stateRef.current;
     if (!snapshot.attemptId) return false;
     try {
-      await api.requestEdit(snapshot.attemptId, questionId, reason);
+      // Send the current answer to DB along with the edit request
+      // so staff can see what the student wants to change.
+      const currentValue = snapshot.answers[questionId] ?? '';
+      await api.requestEdit(snapshot.attemptId, questionId, reason, currentValue);
       toast.success('Modification request sent to examination staff.');
       return true;
     } catch (err) {

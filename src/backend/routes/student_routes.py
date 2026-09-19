@@ -680,11 +680,24 @@ def edit_request(attempt_id):
         return jsonify({"message": "Your time has expired."}), 409
     payload = request.get_json(silent=True) or {}
     question_id = payload.get("questionId")
+    answer_value = payload.get("value", "")
+
+    # Save the answer to DB if not already there (answers are kept in browser
+    # memory during the exam and only persisted to DB on edit request or submit).
     record = query_one(
         "SELECT * FROM answers WHERE attempt_id = ? AND question_id = ?", (attempt_id, question_id)
     )
+    if record is None and answer_value:
+        execute(
+            "INSERT INTO answers (attempt_id, question_id, value, locked, edit_granted, updated_at)"
+            " VALUES (?, ?, ?, 1, 0, ?)",
+            (attempt_id, question_id, answer_value[:10000], _utcnow()),
+        )
+        record = query_one(
+            "SELECT * FROM answers WHERE attempt_id = ? AND question_id = ?", (attempt_id, question_id)
+        )
     if record is None:
-        return jsonify({"message": "That answer has not been locked yet."}), 400
+        return jsonify({"message": "No answer to request modification for."}), 400
     pending = query_one(
         "SELECT 1 FROM edit_requests WHERE attempt_id = ? AND question_id = ? AND status = 'PENDING'",
         (attempt_id, question_id),

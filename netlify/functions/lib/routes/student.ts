@@ -573,8 +573,20 @@ async function editRequest(ctx: RouteCtx): Promise<HttpResponse> {
   if (deadlineExpired(attempt)) throw new ApiError(409, "Your time has expired.");
 
   const questionId = str(ctx.body["questionId"] ?? "");
-  const record = await queryOne("SELECT * FROM answers WHERE attempt_id = ? AND question_id = ?", [attemptId, questionId]);
-  if (record === undefined) throw new ApiError(400, "That answer has not been locked yet.");
+  const answerValue = typeof ctx.body["value"] === "string" ? ctx.body["value"] : "";
+
+  // Save the answer to DB if not already there (answers are kept in browser
+  // memory during the exam and only persisted to DB on edit request or submit).
+  let record = await queryOne("SELECT * FROM answers WHERE attempt_id = ? AND question_id = ?", [attemptId, questionId]);
+  if (record === undefined && answerValue) {
+    await execute(
+      "INSERT INTO answers (attempt_id, question_id, value, locked, edit_granted, updated_at) VALUES (?, ?, ?, 1, 0, ?)",
+      [attemptId, questionId, answerValue.slice(0, 10000), utcNow()]
+    );
+    record = await queryOne("SELECT * FROM answers WHERE attempt_id = ? AND question_id = ?", [attemptId, questionId]);
+  }
+  if (record === undefined) throw new ApiError(400, "No answer to request modification for.");
+
   const pending = await queryOne(
     "SELECT 1 FROM edit_requests WHERE attempt_id = ? AND question_id = ? AND status = 'PENDING'",
     [attemptId, questionId]
