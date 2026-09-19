@@ -10,8 +10,7 @@
 
 [functions]
   node_bundler = "esbuild"
-  included_files = ["netlify/functions/**"]
-  external_node_modules = ["@libsql/client"]
+  external_node_modules = ["@libsql/client", "libsql"]
 
 # SPA fallback — serves index.html for client-side routing
 # Does NOT intercept /.netlify/functions/* (Netlify excludes that path)
