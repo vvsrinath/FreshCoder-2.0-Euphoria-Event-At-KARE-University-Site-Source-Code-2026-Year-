@@ -8,7 +8,6 @@ import {
   destroySession,
   currentUser,
   hashPassword,
-  revokeUserSessions,
   verifyPassword,
 } from "../auth";
 import { RouteCtx, RouteDef } from "../router";
@@ -102,13 +101,13 @@ async function login(ctx: RouteCtx): Promise<HttpResponse> {
 
   const existing = await queryOne("SELECT COUNT(*) AS n FROM sessions WHERE user_id = ?", [user["id"]]);
   if (existing && num(existing["n"]) > 0) {
-    await revokeUserSessions(str(user["id"]));
     await securityEvent(
-      "MULTIPLE_SESSION_DETECTED",
+      "LOGIN_BLOCKED",
       str(user["id"]),
       str(user["role"]),
-      "A second session replaced an active one"
+      `Already logged in — blocked sign-in from ${portal} portal`
     );
+    throw new ApiError(409, "You are already signed in on another device. Please log out there first.");
   }
 
   recordSuccess(userId, ctx.ip);

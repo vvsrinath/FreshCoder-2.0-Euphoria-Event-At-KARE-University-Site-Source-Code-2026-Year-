@@ -108,13 +108,13 @@ def login():
 
     existing = query_one("SELECT COUNT(*) AS n FROM sessions WHERE user_id = ?", (user["id"],))
     if existing and existing["n"] > 0:
-        revoke_user_sessions(user["id"])
         security_event(
-            "MULTIPLE_SESSION_DETECTED",
+            "LOGIN_BLOCKED",
             user["id"],
             user["role"],
-            "A second session replaced an active one",
+            f"Already logged in — blocked sign-in from {portal} portal",
         )
+        return jsonify({"message": "You are already signed in on another device. Please log out there first."}), 409
 
     _record_success(user_id)
     token = create_session(user["id"], user["role"])
