@@ -37,6 +37,8 @@ export interface ExamState {
   violationMessage: string;
   /** Proctoring: true when exam is blocked — student exited fullscreen. */
   fullscreenBlocked: boolean;
+  /** Proctoring: true when DevTools detected open. */
+  devtoolsOpen: boolean;
 }
 
 export function useExamAttempt(testId: string) {
@@ -59,7 +61,8 @@ export function useExamAttempt(testId: string) {
     violations: 0,
     showViolationWarning: false,
     violationMessage: '',
-    fullscreenBlocked: false
+    fullscreenBlocked: false,
+    devtoolsOpen: false,
   });
 
   const stateRef = useRef(state);
@@ -401,6 +404,46 @@ export function useExamAttempt(testId: string) {
       e.preventDefault();
     };
 
+    // Banking-style DevTools detection (runs every 2 seconds)
+    let devtoolsDetected = false;
+    const detectDevTools = () => {
+      if (stateRef.current.submitted) return;
+
+      // Method 1: Window size difference (detects docked DevTools)
+      const widthDiff = window.outerWidth - window.innerWidth;
+      const heightDiff = window.outerHeight - window.innerHeight;
+      const threshold = 200;
+
+      const isOpen = widthDiff > threshold || heightDiff > threshold;
+
+      if (isOpen && !devtoolsDetected) {
+        devtoolsDetected = true;
+        report('DEVTOOLS_ATTEMPT', `DevTools detected via window size diff (${widthDiff}x${heightDiff})`);
+        bumpViolation('Developer Tools detected! Close DevTools to continue the exam.');
+        setState((prev) => ({ ...prev, devtoolsOpen: true }));
+      } else if (!isOpen && devtoolsDetected) {
+        // DevTools closed — resume exam
+        devtoolsDetected = false;
+        setState((prev) => ({ ...prev, devtoolsOpen: false }));
+      }
+
+      // Method 2: Debugger timing (detects undocked DevTools) — only if not already detected
+      if (!devtoolsDetected) {
+        const start = performance.now();
+        // eslint-disable-next-line no-debugger
+        debugger;
+        const elapsed = performance.now() - start;
+        if (elapsed > 100) {
+          devtoolsDetected = true;
+          report('DEVTOOLS_ATTEMPT', 'DevTools detected via debugger timing');
+          bumpViolation('Developer Tools detected! Close DevTools to continue the exam.');
+          setState((prev) => ({ ...prev, devtoolsOpen: true }));
+        }
+      }
+    };
+
+    const devtoolsInterval = window.setInterval(detectDevTools, 2000);
+
     document.addEventListener('visibilitychange', onVisibility);
     document.addEventListener('fullscreenchange', onFullscreen);
     document.addEventListener('contextmenu', onContextMenu);
@@ -411,6 +454,7 @@ export function useExamAttempt(testId: string) {
     document.addEventListener('cut', onCut);
     document.addEventListener('dragstart', onDragStart);
     return () => {
+      window.clearInterval(devtoolsInterval);
       document.removeEventListener('visibilitychange', onVisibility);
       document.removeEventListener('fullscreenchange', onFullscreen);
       document.removeEventListener('contextmenu', onContextMenu);

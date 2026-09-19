@@ -205,7 +205,7 @@ export function Exam() {
         </header>
 
         {/* Fullscreen Blocker — exam hidden until student re-enters fullscreen */}
-        {state.fullscreenBlocked && (
+        {state.fullscreenBlocked && !state.devtoolsOpen && (
           <div className="fixed inset-0 z-[60] flex items-center justify-center bg-[#0a1026] p-6">
             <div className="w-full max-w-md rounded-3xl border border-white/10 bg-[#0d162f]/90 p-10 text-center shadow-2xl backdrop-blur-md">
               <div className="mx-auto mb-5 flex h-16 w-16 items-center justify-center rounded-full bg-red-500/20 text-red-400 border-2 border-red-400/40">
@@ -235,8 +235,40 @@ export function Exam() {
           </div>
         )}
 
+        {/* DevTools Blocker — exam hidden until DevTools is closed */}
+        {state.devtoolsOpen && (
+          <div className="fixed inset-0 z-[70] flex items-center justify-center bg-[#0a1026] p-6">
+            <div className="w-full max-w-md rounded-3xl border border-red-500/30 bg-[#0d162f]/95 p-10 text-center shadow-2xl backdrop-blur-md">
+              <div className="mx-auto mb-5 flex h-16 w-16 items-center justify-center rounded-full bg-red-600/30 text-red-400 border-2 border-red-500/50 animate-pulse">
+                <ShieldAlertIcon className="h-8 w-8" />
+              </div>
+              <h2 className="text-2xl font-black text-white">Developer Tools Detected</h2>
+              <p className="mt-3 text-sm leading-relaxed text-slate-300">
+                <strong className="text-red-400">Inspection is strictly prohibited</strong> during the exam.
+                Developer Tools must be closed to continue.
+              </p>
+              <div className="mt-4 rounded-xl border border-amber-500/30 bg-amber-500/10 p-4">
+                <p className="text-xs font-semibold text-amber-400">
+                  To close Developer Tools:<br />
+                  Press <kbd className="mx-1 rounded bg-white/10 px-1.5 py-0.5 font-mono text-[10px]">F12</kbd> or
+                  <kbd className="mx-1 rounded bg-white/10 px-1.5 py-0.5 font-mono text-[10px]">Ctrl+Shift+I</kbd> again,
+                  or click the X in the DevTools panel.
+                </p>
+              </div>
+              <p className="mt-3 text-xs text-red-400 font-semibold">
+                This violation has been recorded. ({state.violations} total violation{state.violations !== 1 ? 's' : ''})
+              </p>
+              <div className="mt-5 rounded-xl border border-red-500/20 bg-red-500/5 p-3">
+                <p className="text-[11px] text-red-300">
+                  Staff will be notified. Continued use of DevTools may result in automatic test submission.
+                </p>
+              </div>
+            </div>
+          </div>
+        )}
+
         {/* 2-Column Exam Body — hidden when blocked */}
-        <div className={`flex min-h-0 flex-1 ${state.fullscreenBlocked ? 'invisible h-0 overflow-hidden' : ''}`}>
+        <div className={`flex min-h-0 flex-1 ${(state.fullscreenBlocked || state.devtoolsOpen) ? 'invisible h-0 overflow-hidden' : ''}`}>
           {/* Left Question Navigator */}
           <aside className="w-72 shrink-0 border-r border-slate-200 bg-white p-5">
             <QuestionNavigator states={navStates} counts={counts} onSelect={goTo} />
