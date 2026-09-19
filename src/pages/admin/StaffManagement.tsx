@@ -104,7 +104,7 @@ export function StaffManagement() {
 
         <Card>
           <div className="border-b border-slate-200 p-4">
-            <div className="w-64">
+            <div className="w-full sm:w-64 max-w-full">
               <TextField
                 label="Search"
                 placeholder="Staff ID or name…"

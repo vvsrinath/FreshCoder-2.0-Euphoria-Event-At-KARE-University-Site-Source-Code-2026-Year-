@@ -165,7 +165,7 @@ export function StudentManagement() {
 
         <Card>
           <div className="flex flex-wrap items-end gap-3 border-b border-slate-200 p-4">
-            <div className="w-64">
+            <div className="w-full sm:w-64 max-w-full">
               <TextField
                 label="Search"
                 placeholder="Student ID or name…"
@@ -174,7 +174,7 @@ export function StudentManagement() {
                 icon={<SearchIcon className="h-4 w-4" />} />
               
             </div>
-            <div className="w-44">
+            <div className="w-full sm:w-44 max-w-full">
               <SelectField
                 label="Status"
                 value={filters.status}

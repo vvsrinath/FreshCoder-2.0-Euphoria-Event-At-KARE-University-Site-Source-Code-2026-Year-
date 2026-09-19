@@ -168,7 +168,7 @@ export function TestManagement() {
         <div className="rounded-2xl border border-slate-200 bg-white shadow-xs overflow-hidden">
           {/* Filters Bar */}
           <div className="flex flex-wrap items-center gap-3.5 border-b border-slate-100 p-4 bg-slate-50/50">
-            <div className="w-36 sm:w-44">
+            <div className="w-full sm:w-44 max-w-full">
               <select
                 value={typeFilter}
                 onChange={(e) => setTypeFilter(e.target.value)}
@@ -183,7 +183,7 @@ export function TestManagement() {
               </select>
             </div>
 
-            <div className="w-36 sm:w-44">
+            <div className="w-full sm:w-44 max-w-full">
               <select
                 value={statusFilter}
                 onChange={(e) => setStatusFilter(e.target.value)}

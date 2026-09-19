@@ -55,7 +55,7 @@ export function AuditLogs() {
 
         <Card>
           <div className="border-b border-slate-200 p-4">
-            <div className="w-72">
+            <div className="w-full sm:w-72 max-w-full">
               <TextField
                 label="Search"
                 placeholder="Actor, action or target…"

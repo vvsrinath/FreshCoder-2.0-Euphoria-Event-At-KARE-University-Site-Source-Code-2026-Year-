@@ -113,7 +113,7 @@ export function QuestionBank() {
         <div className="rounded-2xl border border-slate-200 bg-white shadow-xs overflow-hidden">
           {/* Filters Bar */}
           <div className="flex flex-wrap items-center gap-3.5 border-b border-slate-100 p-4 bg-slate-50/50">
-            <div className="w-32 sm:w-40">
+            <div className="flex-1 min-w-[120px] sm:flex-none sm:w-40">
               <select
                 value={typeFilter}
                 onChange={(e) => setTypeFilter(e.target.value)}
@@ -130,7 +130,7 @@ export function QuestionBank() {
               </select>
             </div>
 
-            <div className="w-32 sm:w-40">
+            <div className="flex-1 min-w-[120px] sm:flex-none sm:w-40">
               <select
                 value={difficultyFilter}
                 onChange={(e) => setDifficultyFilter(e.target.value)}
@@ -143,7 +143,7 @@ export function QuestionBank() {
               </select>
             </div>
 
-            <div className="w-32 sm:w-40">
+            <div className="flex-1 min-w-[120px] sm:flex-none sm:w-40">
               <select
                 value={topicFilter}
                 onChange={(e) => setTopicFilter(e.target.value)}

@@ -1,17 +1,20 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 import {
   ArrowRightIcon,
   GithubIcon,
   LinkedinIcon,
   MailIcon,
+  MenuIcon,
   PhoneIcon,
+  XIcon,
 } from 'lucide-react';
 import { UniversityMark } from '../components/UniversityMark';
 import { GlobalFooter } from '../components/GlobalFooter';
 import { brand, contact, team } from '../data/eventConfig';
 
 export function Developers() {
+  const [mobileOpen, setMobileOpen] = useState(false);
   return (
     <div className="min-h-screen bg-[#f7f8fc] text-slate-900 font-sans flex flex-col selection:bg-indigo-500 selection:text-white">
       {/* ---------- Navigation ---------- */}
@@ -33,7 +36,7 @@ export function Developers() {
             </Link>
           </nav>
 
-          <div className="flex items-center gap-2.5">
+          <div className="flex items-center gap-2">
             <Link
               to="/login?portal=STUDENT"
               className="inline-flex items-center justify-center rounded-full bg-slate-900 px-4 py-2 text-xs font-semibold text-white transition-all hover:bg-slate-700"
@@ -46,8 +49,24 @@ export function Developers() {
             >
               Staff Portal
             </Link>
+            <button type="button" aria-label={mobileOpen ? 'Close menu' : 'Open menu'} aria-expanded={mobileOpen} onClick={() => setMobileOpen((v) => !v)} className="inline-flex h-9 w-9 items-center justify-center rounded-full border border-slate-200 bg-white text-slate-700 lg:hidden">
+              {mobileOpen ? <XIcon className="h-4 w-4" /> : <MenuIcon className="h-4 w-4" />}
+            </button>
           </div>
         </div>
+        {mobileOpen && (
+          <>
+            <button type="button" aria-label="Close menu" onClick={() => setMobileOpen(false)} className="fixed inset-0 z-30 bg-slate-900/20 backdrop-blur-sm lg:hidden" />
+            <nav className="absolute inset-x-0 top-16 z-40 border-b border-slate-200 bg-white px-5 py-4 shadow-lg lg:hidden">
+              <div className="flex flex-col gap-1">
+                <Link to="/" onClick={() => setMobileOpen(false)} className="rounded-xl px-3 py-2.5 text-sm font-medium text-slate-700 hover:bg-slate-50">Home</Link>
+                <Link to="/developers" onClick={() => setMobileOpen(false)} className="rounded-xl bg-indigo-50 px-3 py-2.5 text-sm font-semibold text-indigo-700">Developers</Link>
+                <Link to="/convenors" onClick={() => setMobileOpen(false)} className="rounded-xl px-3 py-2.5 text-sm font-medium text-slate-700 hover:bg-slate-50">Convenors</Link>
+                <Link to="/login?portal=STAFF" onClick={() => setMobileOpen(false)} className="mt-2 rounded-xl bg-slate-50 px-3 py-2.5 text-sm font-semibold text-slate-700 sm:hidden">Staff Portal</Link>
+              </div>
+            </nav>
+          </>
+        )}
       </header>
 
       {/* ---------- Page header ---------- */}

@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 import {
   ArrowRightIcon,
@@ -9,9 +9,11 @@ import {
   ClockIcon,
   Code2Icon,
   MapPinIcon,
+  MenuIcon,
   ShieldCheckIcon,
   TicketIcon,
   UsersIcon,
+  XIcon,
 } from 'lucide-react';
 import { UniversityMark } from '../components/UniversityMark';
 import { GlobalFooter } from '../components/GlobalFooter';
@@ -33,6 +35,7 @@ const NAV_LINKS: ReadonlyArray<
 ];
 
 export function Landing() {
+  const [mobileOpen, setMobileOpen] = useState(false);
   return (
     <div className="min-h-screen bg-[#f7f8fc] text-slate-900 font-sans flex flex-col selection:bg-indigo-500 selection:text-white">
       {/* ---------- Navigation ---------- */}
@@ -64,7 +67,7 @@ export function Landing() {
             )}
           </nav>
 
-          <div className="flex items-center gap-2.5">
+          <div className="flex items-center gap-2">
             <Link
               to="/login?portal=STUDENT"
               className="inline-flex items-center justify-center rounded-full bg-slate-900 px-4 py-2 text-xs font-semibold text-white transition-all hover:bg-slate-700"
@@ -77,8 +80,41 @@ export function Landing() {
             >
               Staff Portal
             </Link>
+            <button
+              type="button"
+              aria-label={mobileOpen ? 'Close menu' : 'Open menu'}
+              aria-expanded={mobileOpen}
+              onClick={() => setMobileOpen((v) => !v)}
+              className="inline-flex h-9 w-9 items-center justify-center rounded-full border border-slate-200 bg-white text-slate-700 lg:hidden"
+            >
+              {mobileOpen ? <XIcon className="h-4 w-4" /> : <MenuIcon className="h-4 w-4" />}
+            </button>
           </div>
         </div>
+        {/* Mobile drawer */}
+        {mobileOpen && (
+          <>
+            <button type="button" aria-label="Close menu" onClick={() => setMobileOpen(false)} className="fixed inset-0 z-30 bg-slate-900/20 backdrop-blur-sm lg:hidden" />
+            <nav className="absolute inset-x-0 top-16 z-40 border-b border-slate-200 bg-white px-5 py-4 shadow-lg lg:hidden">
+              <div className="flex flex-col gap-1">
+                {NAV_LINKS.map((link) =>
+                  'to' in link ? (
+                    <Link key={link.to} to={link.to} onClick={() => setMobileOpen(false)} className="rounded-xl px-3 py-2.5 text-sm font-medium text-slate-700 hover:bg-slate-50">
+                      {link.label}
+                    </Link>
+                  ) : (
+                    <a key={link.href} href={link.href} onClick={() => setMobileOpen(false)} className="rounded-xl px-3 py-2.5 text-sm font-medium text-slate-700 hover:bg-slate-50">
+                      {link.label}
+                    </a>
+                  )
+                )}
+                <Link to="/login?portal=STAFF" onClick={() => setMobileOpen(false)} className="mt-2 rounded-xl bg-slate-50 px-3 py-2.5 text-sm font-semibold text-slate-700 sm:hidden">
+                  Staff Portal
+                </Link>
+              </div>
+            </nav>
+          </>
+        )}
       </header>
 
       {/* ---------- Hero ---------- */}
@@ -102,7 +138,7 @@ export function Landing() {
         <div className="relative mx-auto flex min-h-[94vh] max-w-7xl flex-col justify-end px-5 py-16 lg:py-24">
           {/* Copy */}
           <div className="max-w-2xl">
-            <h1 className="text-5xl font-black leading-[0.95] tracking-tight text-white sm:text-6xl lg:text-7xl">
+            <h1 className="text-4xl font-black leading-[0.95] tracking-tight text-white sm:text-5xl lg:text-7xl">
               <span className="bg-gradient-to-r from-indigo-300 via-sky-300 to-fuchsia-300 bg-clip-text text-transparent">
                 {brand.competition}
               </span>
