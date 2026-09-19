@@ -14,7 +14,17 @@ const routes: RouteDef[] = [
     method: "GET",
     pattern: /^\/api\/health$/,
     roles: [],
-    handler: async () => ok({ status: "ok", env: "functions" }),
+    handler: async () => {
+      // Diagnostic: check if Turso env vars are available (no values exposed)
+      const { config } = await import("./lib/config");
+      return ok({
+        status: "ok",
+        env: "functions",
+        tursoUrlSet: !!config.tursoDbUrl,
+        tursoTokenSet: !!config.tursoAuthToken,
+        tursoUrlPrefix: config.tursoDbUrl ? config.tursoDbUrl.slice(0, 20) + "..." : "MISSING",
+      });
+    },
   },
   ...authRoutes,
   ...studentRoutes,
