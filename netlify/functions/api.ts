@@ -37,23 +37,35 @@ export async function dispatchRequest(method: string, absolutePath: string, enve
 }
 
 export const handler: Handler = async (event) => {
-  // Netlify redirect rewrites /api/* → /.netlify/functions/api/:splat
-  // Strip the function prefix so route patterns (/api/...) match correctly
+  // Direct call via /.netlify/functions/api/*  →  normalize to /api/* for router
+  // Also handles /api/* via config.path
   let path = event.path;
   if (path.startsWith("/.netlify/functions/api")) {
     path = path.replace("/.netlify/functions/api", "") || "/";
-    if (!path.startsWith("/api/")) path = "/api" + path;
+    if (!path.startsWith("/api/") && !path.startsWith("/")) path = "/" + path;
+    if (!path.startsWith("/api")) path = "/api" + path;
   }
+  // Strip query string for logging
+  const logPath = path.split("?")[0];
 
-  const response = await dispatchRequest(event.httpMethod, path, {
-    headers: (event.headers as Record<string, string | undefined>) ?? {},
-    rawBody: event.body ?? null,
-    isBase64Encoded: event.isBase64Encoded ?? false,
-    query: (event.queryStringParameters as Record<string, string | undefined>) ?? {},
-  });
-  return {
-    statusCode: response.statusCode,
-    headers: { ...response.headers, "Access-Control-Allow-Origin": "*" },
-    body: response.body,
-  };
+  try {
+    const response = await dispatchRequest(event.httpMethod, path, {
+      headers: (event.headers as Record<string, string | undefined>) ?? {},
+      rawBody: event.body ?? null,
+      isBase64Encoded: event.isBase64Encoded ?? false,
+      query: (event.queryStringParameters as Record<string, string | undefined>) ?? {},
+    });
+    return {
+      statusCode: response.statusCode,
+      headers: { ...response.headers, "Access-Control-Allow-Origin": "*", "Access-Control-Allow-Headers": "Content-Type, Authorization" },
+      body: response.body,
+    };
+  } catch (err) {
+    console.error(`[api] Unhandled error for ${event.httpMethod} ${logPath}:`, err);
+    return {
+      statusCode: 500,
+      headers: { "Content-Type": "application/json", "Access-Control-Allow-Origin": "*" },
+      body: JSON.stringify({ message: `Server error: ${(err as Error).message}` }),
+    };
+  }
 };

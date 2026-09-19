@@ -8,3 +8,10 @@
   NODE_VERSION = "20"
   SECRETS_SCAN_ENABLED = "false"
 
+# SPA fallback — serves index.html for client-side routing
+# Does NOT intercept /.netlify/functions/* (Netlify excludes that path)
+[[redirects]]
+  from = "/*"
+  to = "/index.html"
+  status = 200
+

@@ -45,7 +45,9 @@ async function request<T>(method: string, url: string, body?: unknown): Promise<
   const token = getToken();
 
   if (API_BASE || IS_PROD) {
-    const target = `${API_BASE}${url}`;
+    // When calling via /.netlify/functions/api, strip /api prefix to avoid double /api/api
+    const apiPath = API_BASE.includes('/.netlify/functions') ? url.replace(/^\/api/, '') || '/' : url;
+    const target = `${API_BASE}${apiPath}`;
     const response = await fetch(target, {
       method,
       headers: {
