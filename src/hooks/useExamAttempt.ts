@@ -310,31 +310,95 @@ export function useExamAttempt(testId: string) {
       e.returnValue = '';
     };
 
-    // Block keyboard shortcuts that could leave the page (Esc, Alt+Tab, Ctrl+Tab, Ctrl+W, F11, etc.)
+    // Banking-style: block all DevTools / navigation / clipboard / print shortcuts
     const onKeyDown = (e: KeyboardEvent) => {
       if (stateRef.current.submitted) return;
-      // Esc, Ctrl+Tab, Ctrl+W, Ctrl+T, Ctrl+N, Alt+Tab, F11
-      const blocked = (
-        e.key === 'Escape' ||
-        (e.ctrlKey && ['Tab', 'w', 't', 'n', 'Shift'].includes(e.key)) ||
-        (e.altKey && e.key === 'Tab') ||
-        e.key === 'F11'
-      );
-      if (blocked) {
-        e.preventDefault();
-        e.stopPropagation();
-        report('NAVIGATION_ATTEMPT', `Blocked key: ${e.key}`);
-        if (e.key === 'Escape') {
-          // Esc tries to exit fullscreen — aggressively re-enter.
-          window.setTimeout(() => {
-            if (!document.fullscreenElement && !stateRef.current.submitted) {
-              document.documentElement.requestFullscreen?.().catch(() => undefined);
-            }
-          }, 100);
-        } else {
-          bumpViolation('Keyboard shortcuts that leave the exam are blocked.');
+
+      const key = e.key;
+      const ctrl = e.ctrlKey || e.metaKey;
+      const shift = e.shiftKey;
+      const alt = e.altKey;
+
+      // F12 — DevTools
+      if (key === 'F12') {
+        e.preventDefault(); e.stopPropagation();
+        report('DEVTOOLS_ATTEMPT', 'F12 blocked');
+        bumpViolation('Developer Tools access is blocked.');
+        return;
+      }
+      // F5 / F11 / F10 / Shift+F5 — reload / fullscreen / menu
+      if (key === 'F5' || key === 'F11' || key === 'F10' || (shift && key === 'F5')) {
+        e.preventDefault(); e.stopPropagation();
+        report('NAVIGATION_ATTEMPT', `Blocked key: ${key}`);
+        bumpViolation('This key is blocked during the exam.');
+        return;
+      }
+      // Esc — exit fullscreen → aggressively re-enter
+      if (key === 'Escape') {
+        e.preventDefault(); e.stopPropagation();
+        report('NAVIGATION_ATTEMPT', 'Escape blocked');
+        window.setTimeout(() => {
+          if (!document.fullscreenElement && !stateRef.current.submitted) {
+            document.documentElement.requestFullscreen?.().catch(() => undefined);
+          }
+        }, 100);
+        return;
+      }
+      // Ctrl/Cmd + key combos
+      if (ctrl && !alt) {
+        const blockList = [
+          'Tab', 'w', 't', 'n', 'r', 'R', // navigation
+          'i', 'I', 'j', 'J', 'c', 'C',   // DevTools / inspect
+          'u', 'U',                          // view source
+          's', 'S',                          // save page
+          'p', 'P',                          // print
+          'l', 'L',                          // lock screen
+          'f', 'F',                          // find (could leak questions)
+        ];
+        if (shift) {
+          // Ctrl+Shift+I/J/C — DevTools, Ctrl+Shift+R — hard reload
+          blockList.push('i', 'I', 'j', 'J', 'c', 'C', 'r', 'R', 'Delete');
+        }
+        if (blockList.includes(key)) {
+          e.preventDefault(); e.stopPropagation();
+          report('DEVTOOLS_ATTEMPT', `Blocked Ctrl+${shift ? 'Shift+' : ''}${key}`);
+          bumpViolation('This keyboard shortcut is blocked during the exam.');
+          return;
         }
       }
+      // PrintScreen — screenshot
+      if (key === 'PrintScreen') {
+        e.preventDefault(); e.stopPropagation();
+        report('SCREEN_CAPTURE', 'PrintScreen blocked');
+        bumpViolation('Screenshots are blocked during the exam.');
+        return;
+      }
+    };
+
+    // Block clipboard paste (prevent pasting answers from external sources)
+    const onPaste = (e: ClipboardEvent) => {
+      if (stateRef.current.submitted) return;
+      e.preventDefault();
+      report('CLIPBOARD_BLOCKED', 'Paste blocked during exam');
+    };
+
+    // Block clipboard copy (prevent copying questions out)
+    const onCopy = (e: ClipboardEvent) => {
+      if (stateRef.current.submitted) return;
+      e.preventDefault();
+      report('CLIPBOARD_BLOCKED', 'Copy blocked during exam');
+    };
+
+    // Block cut
+    const onCut = (e: ClipboardEvent) => {
+      if (stateRef.current.submitted) return;
+      e.preventDefault();
+      report('CLIPBOARD_BLOCKED', 'Cut blocked during exam');
+    };
+
+    // Block drag (prevent dragging question text out)
+    const onDragStart = (e: DragEvent) => {
+      e.preventDefault();
     };
 
     document.addEventListener('visibilitychange', onVisibility);
@@ -342,12 +406,20 @@ export function useExamAttempt(testId: string) {
     document.addEventListener('contextmenu', onContextMenu);
     window.addEventListener('beforeunload', onBeforeUnload);
     window.addEventListener('keydown', onKeyDown);
+    document.addEventListener('paste', onPaste);
+    document.addEventListener('copy', onCopy);
+    document.addEventListener('cut', onCut);
+    document.addEventListener('dragstart', onDragStart);
     return () => {
       document.removeEventListener('visibilitychange', onVisibility);
       document.removeEventListener('fullscreenchange', onFullscreen);
       document.removeEventListener('contextmenu', onContextMenu);
       window.removeEventListener('beforeunload', onBeforeUnload);
       window.removeEventListener('keydown', onKeyDown);
+      document.removeEventListener('paste', onPaste);
+      document.removeEventListener('copy', onCopy);
+      document.removeEventListener('cut', onCut);
+      document.removeEventListener('dragstart', onDragStart);
     };
   }, []);
 

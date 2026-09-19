@@ -157,7 +157,12 @@ export function Exam() {
 
   return (
     <DesktopOnlyGate>
-      <div className="flex h-screen w-full flex-col bg-[#f8fafc]">
+      {/* Banking-style: disable text selection, drag, print */}
+      <style>{`
+        @media print { body * { display: none !important; } }
+        .exam-secure { user-select: none; -webkit-user-select: none; -moz-user-select: none; -ms-user-select: none; }
+      `}</style>
+      <div className="exam-secure flex h-screen w-full flex-col bg-[#f8fafc]" draggable="false" onDragStart={(e) => e.preventDefault()}>
         {/* Dark Navy Header — hidden when blocked */}
         <header className={`flex h-18 shrink-0 items-center justify-between gap-6 bg-[#0a1026] px-6 text-white border-b border-slate-800 ${state.fullscreenBlocked ? 'invisible h-0 overflow-hidden' : ''}`}>
           <div className="flex items-center gap-4">
