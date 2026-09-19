@@ -272,7 +272,7 @@ export function resetDb(): void {
   const fresh = buildStore();
   (Object.keys(fresh) as (keyof Store)[]).forEach((key) => {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    ;(db as any)[key] = (fresh as any)[key];
+    (db as any)[key] = (fresh as any)[key];
   });
 }
 
