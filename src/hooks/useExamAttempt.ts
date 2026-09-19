@@ -228,20 +228,33 @@ export function useExamAttempt(testId: string) {
     try {
       await document.documentElement.requestFullscreen?.();
     } catch {
-      /* user may have denied — keep blocked */
+      /* keep blocked — fullscreenchange listener will handle success */
     }
-    // Check if fullscreen actually entered; the fullscreenchange listener
-    // will clear fullscreenBlocked if it did.
   }, []);
 
   // Auto-request fullscreen once the attempt loads.
   useEffect(() => {
     if (state.attemptId && !state.submitted) {
-      // Small delay so the DOM is ready.
       const t = window.setTimeout(requestFullscreen, 300);
       return () => window.clearTimeout(t);
     }
   }, [state.attemptId, state.submitted, requestFullscreen]);
+
+  // While blocked, any click or keypress tries to re-enter fullscreen.
+  useEffect(() => {
+    if (!state.fullscreenBlocked || state.submitted) return;
+    const tryReenter = () => {
+      if (!document.fullscreenElement && !stateRef.current.submitted) {
+        document.documentElement.requestFullscreen?.().catch(() => undefined);
+      }
+    };
+    window.addEventListener('click', tryReenter);
+    window.addEventListener('keydown', tryReenter);
+    return () => {
+      window.removeEventListener('click', tryReenter);
+      window.removeEventListener('keydown', tryReenter);
+    };
+  }, [state.fullscreenBlocked, state.submitted]);
 
   // Monitoring signals. These are observations + enforcement.
   useEffect(() => {
@@ -271,7 +284,7 @@ export function useExamAttempt(testId: string) {
         // Re-entered fullscreen — unblock the exam.
         setState((prev) => ({ ...prev, fullscreenBlocked: false }));
       } else if (!stateRef.current.submitted) {
-        // Exited fullscreen — block the exam immediately.
+        // Exited fullscreen — block + immediately try to re-enter.
         report('FULLSCREEN_EXIT', 'Left fullscreen mode');
         setState((prev) => ({
           ...prev,
@@ -279,6 +292,12 @@ export function useExamAttempt(testId: string) {
           violations: prev.violations + 1,
           violationMessage: 'You exited fullscreen. The exam is blocked until you re-enter fullscreen or staff approves.'
         }));
+        // Aggressively try to re-enter (works if triggered by user gesture).
+        window.setTimeout(() => {
+          if (!document.fullscreenElement && !stateRef.current.submitted) {
+            document.documentElement.requestFullscreen?.().catch(() => undefined);
+          }
+        }, 100);
       }
     };
 
@@ -294,19 +313,30 @@ export function useExamAttempt(testId: string) {
       e.returnValue = '';
     };
 
-    // Block keyboard shortcuts that could leave the page (Alt+Tab, Ctrl+Tab, Ctrl+W, F11, etc.)
+    // Block keyboard shortcuts that could leave the page (Esc, Alt+Tab, Ctrl+Tab, Ctrl+W, F11, etc.)
     const onKeyDown = (e: KeyboardEvent) => {
       if (stateRef.current.submitted) return;
-      // Ctrl+Tab, Ctrl+W, Ctrl+T, Ctrl+N, Alt+Tab, F11
+      // Esc, Ctrl+Tab, Ctrl+W, Ctrl+T, Ctrl+N, Alt+Tab, F11
       const blocked = (
+        e.key === 'Escape' ||
         (e.ctrlKey && ['Tab', 'w', 't', 'n', 'Shift'].includes(e.key)) ||
         (e.altKey && e.key === 'Tab') ||
         e.key === 'F11'
       );
       if (blocked) {
         e.preventDefault();
+        e.stopPropagation();
         report('NAVIGATION_ATTEMPT', `Blocked key: ${e.key}`);
-        bumpViolation('Keyboard shortcuts that leave the exam are blocked.');
+        if (e.key === 'Escape') {
+          // Esc tries to exit fullscreen — aggressively re-enter.
+          window.setTimeout(() => {
+            if (!document.fullscreenElement && !stateRef.current.submitted) {
+              document.documentElement.requestFullscreen?.().catch(() => undefined);
+            }
+          }, 100);
+        } else {
+          bumpViolation('Keyboard shortcuts that leave the exam are blocked.');
+        }
       }
     };
 

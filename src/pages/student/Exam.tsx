@@ -158,8 +158,8 @@ export function Exam() {
   return (
     <DesktopOnlyGate>
       <div className="flex h-screen w-full flex-col bg-[#f8fafc]">
-        {/* Dark Navy Header */}
-        <header className="flex h-18 shrink-0 items-center justify-between gap-6 bg-[#0a1026] px-6 text-white border-b border-slate-800">
+        {/* Dark Navy Header — hidden when blocked */}
+        <header className={`flex h-18 shrink-0 items-center justify-between gap-6 bg-[#0a1026] px-6 text-white border-b border-slate-800 ${state.fullscreenBlocked ? 'invisible h-0 overflow-hidden' : ''}`}>
           <div className="flex items-center gap-4">
             <BrandMark tone="light" />
             <span className="h-6 w-px bg-white/20 hidden sm:block" aria-hidden="true" />
@@ -230,8 +230,8 @@ export function Exam() {
           </div>
         )}
 
-        {/* 2-Column Exam Body */}
-        <div className="flex min-h-0 flex-1">
+        {/* 2-Column Exam Body — hidden when blocked */}
+        <div className={`flex min-h-0 flex-1 ${state.fullscreenBlocked ? 'invisible h-0 overflow-hidden' : ''}`}>
           {/* Left Question Navigator */}
           <aside className="w-72 shrink-0 border-r border-slate-200 bg-white p-5">
             <QuestionNavigator states={navStates} counts={counts} onSelect={goTo} />
