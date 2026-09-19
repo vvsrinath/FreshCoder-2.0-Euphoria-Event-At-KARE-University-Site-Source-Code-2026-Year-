@@ -1,0 +1,13 @@
+# GitHub Linguist overrides
+# Display TypeScript as JavaScript in the language bar
+*.ts linguist-language=JavaScript
+*.tsx linguist-language=JavaScript
+
+# Hide Python backend from language bar (not used in Netlify deploy)
+src/backend/**/*.py linguist-vendored
+
+# Hide config/data files from language bar
+*.json linguist-vendored
+*.sql linguist-vendored
+*.md linguist-documentation
+netlify/**/*.js linguist-generated
