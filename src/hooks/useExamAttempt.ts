@@ -35,6 +35,8 @@ export interface ExamState {
   showViolationWarning: boolean;
   /** Proctoring: the most recent violation message. */
   violationMessage: string;
+  /** Proctoring: true when exam is blocked — student exited fullscreen. */
+  fullscreenBlocked: boolean;
 }
 
 export function useExamAttempt(testId: string) {
@@ -56,7 +58,8 @@ export function useExamAttempt(testId: string) {
     submitting: false,
     violations: 0,
     showViolationWarning: false,
-    violationMessage: ''
+    violationMessage: '',
+    fullscreenBlocked: false
   });
 
   const stateRef = useRef(state);
@@ -220,6 +223,17 @@ export function useExamAttempt(testId: string) {
     setState((prev) => ({ ...prev, showViolationWarning: false }));
   }, []);
 
+  /** Student clicks "Re-enter Fullscreen" on the blocking overlay. */
+  const reEnterFullscreen = useCallback(async () => {
+    try {
+      await document.documentElement.requestFullscreen?.();
+    } catch {
+      /* user may have denied — keep blocked */
+    }
+    // Check if fullscreen actually entered; the fullscreenchange listener
+    // will clear fullscreenBlocked if it did.
+  }, []);
+
   // Auto-request fullscreen once the attempt loads.
   useEffect(() => {
     if (state.attemptId && !state.submitted) {
@@ -253,15 +267,18 @@ export function useExamAttempt(testId: string) {
     };
 
     const onFullscreen = () => {
-      if (!document.fullscreenElement && !stateRef.current.submitted) {
+      if (document.fullscreenElement) {
+        // Re-entered fullscreen — unblock the exam.
+        setState((prev) => ({ ...prev, fullscreenBlocked: false }));
+      } else if (!stateRef.current.submitted) {
+        // Exited fullscreen — block the exam immediately.
         report('FULLSCREEN_EXIT', 'Left fullscreen mode');
-        bumpViolation('You exited fullscreen. The exam must be taken in fullscreen mode.');
-        // Re-request fullscreen after a short delay.
-        window.setTimeout(() => {
-          if (!document.fullscreenElement && !stateRef.current.submitted) {
-            document.documentElement.requestFullscreen?.().catch(() => undefined);
-          }
-        }, 500);
+        setState((prev) => ({
+          ...prev,
+          fullscreenBlocked: true,
+          violations: prev.violations + 1,
+          violationMessage: 'You exited fullscreen. The exam is blocked until you re-enter fullscreen or staff approves.'
+        }));
       }
     };
 
@@ -307,5 +324,5 @@ export function useExamAttempt(testId: string) {
     };
   }, []);
 
-  return { state, setAnswer, goTo, toggleFlag, lockAnswer, requestEdit, submit, dismissWarning };
+  return { state, setAnswer, goTo, toggleFlag, lockAnswer, requestEdit, submit, dismissWarning, reEnterFullscreen };
 }

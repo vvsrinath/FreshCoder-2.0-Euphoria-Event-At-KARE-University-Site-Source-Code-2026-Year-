@@ -28,7 +28,7 @@ export function Exam() {
   const { id = '' } = useParams();
   const navigate = useNavigate();
   const { logout } = useAuth();
-  const { state, setAnswer, goTo, toggleFlag, lockAnswer, requestEdit, submit, dismissWarning } = useExamAttempt(id);
+  const { state, setAnswer, goTo, toggleFlag, lockAnswer, requestEdit, submit, dismissWarning, reEnterFullscreen } = useExamAttempt(id);
   const [lockedDialog, setLockedDialog] = useState(false);
   const [editDialog, setEditDialog] = useState(false);
   const [editReason, setEditReason] = useState('');
@@ -198,6 +198,37 @@ export function Exam() {
             </button>
           </div>
         </header>
+
+        {/* Fullscreen Blocker — exam hidden until student re-enters fullscreen */}
+        {state.fullscreenBlocked && (
+          <div className="fixed inset-0 z-[60] flex items-center justify-center bg-[#0a1026] p-6">
+            <div className="w-full max-w-md rounded-3xl border border-white/10 bg-[#0d162f]/90 p-10 text-center shadow-2xl backdrop-blur-md">
+              <div className="mx-auto mb-5 flex h-16 w-16 items-center justify-center rounded-full bg-red-500/20 text-red-400 border-2 border-red-400/40">
+                <ShieldAlertIcon className="h-8 w-8" />
+              </div>
+              <h2 className="text-2xl font-black text-white">Exam Paused</h2>
+              <p className="mt-3 text-sm leading-relaxed text-slate-300">
+                You exited fullscreen mode. Your exam is <strong className="text-red-400">blocked</strong> until you
+                re-enter fullscreen or a staff member approves your return.
+              </p>
+              <p className="mt-2 text-xs text-amber-400 font-semibold">
+                This violation has been reported to the examiner. ({state.violations} total violation{state.violations !== 1 ? 's' : ''})
+              </p>
+              <div className="mt-7 flex flex-col gap-3">
+                <button
+                  type="button"
+                  onClick={reEnterFullscreen}
+                  className="w-full rounded-xl bg-blue-600 py-3.5 text-sm font-bold text-white shadow-lg shadow-blue-600/30 hover:bg-blue-500 transition-all"
+                >
+                  Re-enter Fullscreen
+                </button>
+                <p className="text-[11px] text-slate-500">
+                  Click the button above, then accept the browser fullscreen prompt.
+                </p>
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* 2-Column Exam Body */}
         <div className="flex min-h-0 flex-1">
