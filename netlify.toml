@@ -1,0 +1,9 @@
+# Netlify deployment for the Fresh Coders 2.0 — Euphoria 2026 platform.
+# Builds the Vite React app as a static site. The app runs fully on the
+# bundled in-browser demo backend, so no server is required for a demo deploy.
+[build]
+  command = "npm run build"
+  publish = "dist"
+
+[build.environment]
+  NODE_VERSION = "20"

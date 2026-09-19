@@ -1,0 +1,42 @@
+{
+  "FULLSCREEN_EXIT": {
+    "weight": 2,
+    "label": "Left fullscreen",
+    "severity": "moderate"
+  },
+  "TAB_VISIBILITY_CHANGE": {
+    "weight": 1,
+    "label": "Switched tabs",
+    "severity": "low"
+  },
+  "NAVIGATION_ATTEMPT": {
+    "weight": 4,
+    "label": "Tried to navigate away",
+    "severity": "high"
+  },
+  "CONTEXT_MENU_BLOCKED": {
+    "weight": 1,
+    "label": "Right-click blocked",
+    "severity": "low"
+  },
+  "COPY_BLOCKED": {
+    "weight": 1,
+    "label": "Copy blocked",
+    "severity": "low"
+  },
+  "LOGIN_FAILURE": {
+    "weight": 2,
+    "label": "Failed login",
+    "severity": "moderate"
+  },
+  "MULTIPLE_SESSION_DETECTED": {
+    "weight": 5,
+    "label": "Multiple sessions",
+    "severity": "high"
+  },
+  "LOGIN_THROTTLED": {
+    "weight": 3,
+    "label": "Login throttled",
+    "severity": "high"
+  }
+}

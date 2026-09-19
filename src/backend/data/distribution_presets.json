@@ -1,0 +1,33 @@
+{
+  "QUIZ": {
+    "MCQ": 8,
+    "TRUE_FALSE": 4,
+    "FILL_BLANK": 4
+  },
+  "MCQ": {
+    "MCQ": 20
+  },
+  "FILL_BLANK": {
+    "FILL_BLANK": 20
+  },
+  "OUTPUT": {
+    "OUTPUT": 15
+  },
+  "CODE_COMPLETION": {
+    "CODE_COMPLETION": 15
+  },
+  "DEBUGGING": {
+    "DEBUGGING": 15
+  },
+  "CODING": {
+    "CODING": 5
+  },
+  "MIXED": {
+    "MCQ": 10,
+    "TRUE_FALSE": 5,
+    "FILL_BLANK": 5,
+    "OUTPUT": 5,
+    "CODE_COMPLETION": 5,
+    "DEBUGGING": 5
+  }
+}

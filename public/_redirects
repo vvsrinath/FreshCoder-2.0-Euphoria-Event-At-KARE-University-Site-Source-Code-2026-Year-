@@ -1,0 +1,3 @@
+# SPA fallback: let the react-router BrowserRouter handle deep links
+# (/student, /staff, ...) on refresh instead of returning a 404.
+/*    /index.html   200
