@@ -1,14 +1,14 @@
 import { localRequest } from './server';
 
 /**
- * Single API client. Point VITE_API_BASE_URL at the Flask server
- * (e.g. http://localhost:5000) and every call below hits the real backend
- * instead of the bundled local implementation — the contract is identical.
+ * Single API client.  Resolution order:
+ *   1. VITE_API_BASE_URL  – explicit remote backend (e.g. http://localhost:5000)
+ *   2. Production build    – same-origin /api  (Netlify Functions)
+ *   3. Dev without env var – bundled in-browser mock
  */
-const BASE_URL =
-typeof import.meta !== 'undefined' &&
-(import.meta as unknown as {env?: Record<string, string>;}).env?.VITE_API_BASE_URL ||
-'';
+const env = (import.meta as unknown as { env?: Record<string, string> }).env ?? {};
+const EXPLICIT_URL = env.VITE_API_BASE_URL || '';
+const IS_PROD = typeof import.meta !== 'undefined' && (import.meta as { env?: { MODE?: string } }).env?.MODE === 'production';
 
 const TOKEN_KEY = 'fc_session_token';
 
@@ -41,8 +41,9 @@ export class ApiRequestError extends Error {
 async function request<T>(method: string, url: string, body?: unknown): Promise<T> {
   const token = getToken();
 
-  if (BASE_URL) {
-    const response = await fetch(`${BASE_URL}${url}`, {
+  if (EXPLICIT_URL || IS_PROD) {
+    const target = `${EXPLICIT_URL}${url}`;
+    const response = await fetch(target, {
       method,
       headers: {
         'Content-Type': 'application/json',

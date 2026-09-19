@@ -1,9 +1,16 @@
-# Netlify deployment for the Fresh Coders 2.0 — Euphoria 2026 platform.
-# Builds the Vite React app as a static site. The app runs fully on the
-# bundled in-browser demo backend, so no server is required for a demo deploy.
+# Netlify deployment for Fresh Coders 2.0 — Euphoria 2026 platform.
+# Builds the Vite React app as static, with a TypeScript Netlify Function
+# backend that talks to Turso (libSQL).
 [build]
   command = "npm run build"
   publish = "dist"
+  functions = "netlify/functions"
 
 [build.environment]
   NODE_VERSION = "20"
+
+# SPA fallback: serve index.html for any route that isn't a static file or /api/*
+[[redirects]]
+  from = "/*"
+  to = "/index.html"
+  status = 200
