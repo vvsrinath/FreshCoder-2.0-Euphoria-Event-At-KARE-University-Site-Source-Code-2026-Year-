@@ -121,27 +121,33 @@ export const convenors = [
     email: 'vvsrinath0@gmail.com',
     highlight: 'student-dev',
   },
+] as const;
+
+export const staffCoordinators = [
   {
     name: 'Ms. Avula Gowthami',
-    role: 'Coordinator',
+    role: 'Staff Coordinator',
   },
   {
     name: 'Ms. R. Kashniha',
-    role: 'Coordinator',
+    role: 'Staff Coordinator',
   },
   {
     name: 'Mr. B. Ponmuklan',
-    role: 'Coordinator',
+    role: 'Staff Coordinator',
     phone: '+91 63801 12049',
   },
+] as const;
+
+export const studentCoordinators = [
   {
     name: 'Mr. P. Pankaj Kumar Reddy',
-    role: 'Coordinator',
+    role: 'Student Coordinator',
     phone: '+91 70937 59830',
   },
   {
     name: 'Mr. V. Venkateshan',
-    role: 'Coordinator',
+    role: 'Student Coordinator',
     phone: '+91 88383 27577',
   },
 ] as const;
