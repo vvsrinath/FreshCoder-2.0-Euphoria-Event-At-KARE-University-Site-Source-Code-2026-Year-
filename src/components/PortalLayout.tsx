@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { NavLink, useNavigate } from 'react-router-dom';
 import { ChevronDownIcon, LogOutIcon, MenuIcon, XIcon, UserIcon } from 'lucide-react';
 import { BrandMark } from './BrandMark';
@@ -33,6 +33,43 @@ export function PortalLayout({ portalLabel, navItems, children, headerRight }: P
   const isStudent = user?.role === 'STUDENT';
   const roleDisplay = isStudent ? 'Student' : 'Staff';
   const defaultId = isStudent ? 'ST2026001' : 'SF2026';
+
+  // Student pages: block copy/paste and DevTools shortcuts via JS
+  useEffect(() => {
+    if (!isStudent) return;
+    const block = (e: Event) => e.preventDefault();
+    const onKeyDown = (e: KeyboardEvent) => {
+      const key = e.key;
+      const ctrl = e.ctrlKey || e.metaKey;
+      const shift = e.shiftKey;
+      // Block F12 and all function keys, Ctrl+Shift+I/J/C, Ctrl+U/S/P, Alt combos, PrintScreen
+      if (/^F\d{1,2}$/.test(key) || key === 'PrintScreen') {
+        e.preventDefault(); e.stopPropagation(); (e as unknown as { stopImmediatePropagation: () => void }).stopImmediatePropagation?.();
+        return;
+      }
+      if (key === 'Escape') { e.preventDefault(); e.stopPropagation(); return; }
+      if (ctrl) {
+        const blockList = ['Tab','w','t','n','r','R','i','I','j','J','c','C','u','U','s','S','p','P','a','A','f','F'];
+        if (shift) blockList.push('Delete');
+        if (blockList.includes(key)) { e.preventDefault(); e.stopPropagation(); return; }
+      }
+      if (e.altKey) { e.preventDefault(); e.stopPropagation(); }
+    };
+    document.addEventListener('contextmenu', block, true);
+    document.addEventListener('copy', block, true);
+    document.addEventListener('cut', block, true);
+    document.addEventListener('paste', block, true);
+    document.addEventListener('dragstart', block, true);
+    window.addEventListener('keydown', onKeyDown, true);
+    return () => {
+      document.removeEventListener('contextmenu', block, true);
+      document.removeEventListener('copy', block, true);
+      document.removeEventListener('cut', block, true);
+      document.removeEventListener('paste', block, true);
+      document.removeEventListener('dragstart', block, true);
+      window.removeEventListener('keydown', onKeyDown, true);
+    };
+  }, [isStudent]);
 
   return (
     <div className="flex min-h-screen w-full bg-[#f8fafc]">
