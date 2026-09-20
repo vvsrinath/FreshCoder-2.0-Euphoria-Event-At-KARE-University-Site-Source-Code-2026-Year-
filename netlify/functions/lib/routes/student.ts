@@ -5,6 +5,7 @@ import { execute, query, queryOne, str, num, securityEvent, type Row } from "../
 import { gradeAnswer } from "../grading";
 import { RouteCtx, RouteDef } from "../router";
 import { loads, parseUtc, shuffle, utcNow } from "../utils";
+import { verifyPassword } from "../auth";
 
 const FINAL_STATES = ["SUBMITTED", "FORCE_SUBMITTED", "TIME_EXPIRED"];
 
@@ -611,6 +612,26 @@ async function editRequest(ctx: RouteCtx): Promise<HttpResponse> {
   return ok({ request: { id: requestId, status: "PENDING" } });
 }
 
+async function verifyPin(ctx: RouteCtx): Promise<HttpResponse> {
+  const attemptId = ctx.params[0];
+  const pin = String(ctx.body["pin"] ?? "").trim();
+  if (!pin) throw new ApiError(400, "Please enter staff PIN");
+  const attempt = await queryOne("SELECT * FROM attempts WHERE id = ? AND student_id = ?", [attemptId, ctx.user.id]);
+  if (!attempt) throw new ApiError(404, "Attempt not found");
+  // Verify PIN against any active staff/super_admin/developer password (secure, not hardcoded)
+  const staffRows = await query("SELECT password_hash FROM users WHERE role IN ('STAFF','SUPER_ADMIN','DEVELOPER') AND active = 1");
+  let valid = false;
+  for (const row of staffRows) {
+    if (verifyPassword(pin, str(row["password_hash"]))) { valid = true; break; }
+  }
+  if (!valid) {
+    await securityEvent("STAFF_PIN_FAILED", ctx.user.id, ctx.user.role, `Invalid PIN for attempt ${attemptId}`, str(attempt["test_id"]), attemptId);
+    throw new ApiError(403, "Invalid PIN. Access Denied.");
+  }
+  await securityEvent("STAFF_PIN_SUCCESS", ctx.user.id, ctx.user.role, `Staff unlocked attempt ${attemptId}`, str(attempt["test_id"]), attemptId);
+  return ok({ ok: true });
+}
+
 async function studentResults(ctx: RouteCtx): Promise<HttpResponse> {
   const rows = await query(
     "SELECT r.*, t.name AS test_name FROM results r JOIN tests t ON t.id = r.test_id WHERE r.student_id = ? AND r.published = 1 ORDER BY r.submitted_at DESC",
@@ -646,5 +667,6 @@ export const studentRoutes: RouteDef[] = [
   { method: "POST", pattern: /^\/api\/student\/attempts\/([^/]+)\/heartbeat$/, roles: STUDENT, handler: heartbeat },
   { method: "POST", pattern: /^\/api\/student\/attempts\/([^/]+)\/submit$/, roles: STUDENT, handler: submit },
   { method: "POST", pattern: /^\/api\/student\/attempts\/([^/]+)\/edit-request$/, roles: STUDENT, handler: editRequest },
+  { method: "POST", pattern: /^\/api\/student\/attempts\/([^/]+)\/verify-pin$/, roles: STUDENT, handler: verifyPin },
   { method: "GET", pattern: /^\/api\/student\/results$/, roles: STUDENT, handler: studentResults },
 ];

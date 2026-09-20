@@ -276,9 +276,10 @@ export function useExamAttempt(testId: string) {
     };
 
     const onVisibility = () => {
-      if (document.hidden) {
+      if (document.hidden && !stateRef.current.submitted) {
         report('TAB_VISIBILITY_CHANGE', 'Tab hidden — exam left focus');
         bumpViolation('You switched tabs or windows. This has been reported to the examiner.');
+        setState((prev) => ({ ...prev, fullscreenBlocked: true, violations: prev.violations + 1, violationMessage: 'You switched tabs. The exam is locked until staff unlocks it.' }));
       }
     };
 

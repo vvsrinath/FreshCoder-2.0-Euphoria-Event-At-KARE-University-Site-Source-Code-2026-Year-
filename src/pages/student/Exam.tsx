@@ -22,6 +22,7 @@ import { LoadingState } from '../../components/LoadingState';
 import { ErrorState } from '../../components/ErrorState';
 import { useExamAttempt } from '../../hooks/useExamAttempt';
 import { useAuth } from '../../contexts/AuthContext';
+import { api } from '../../services/api';
 import { titleCase } from '../../utils/format';
 
 export function Exam() {
@@ -33,6 +34,9 @@ export function Exam() {
   const [editDialog, setEditDialog] = useState(false);
   const [editReason, setEditReason] = useState('');
   const [confirmSubmit, setConfirmSubmit] = useState(false);
+  const [staffPin, setStaffPin] = useState('');
+  const [pinError, setPinError] = useState('');
+  const [unlocking, setUnlocking] = useState(false);
 
   const question = state.questions[state.current];
   const meta = question ? state.meta[question.id] : undefined;
@@ -81,6 +85,22 @@ export function Exam() {
     if (ok) {
       setEditDialog(false);
       setEditReason('');
+    }
+  };
+
+  const handleUnlock = async () => {
+    if (!staffPin.trim()) { setPinError('Please enter staff PIN'); return; }
+    setUnlocking(true); setPinError('');
+    try {
+      // Verify staff PIN via backend (not hardcoded)
+      await api.verifyStaffPin(state.attemptId || id, staffPin);
+      setStaffPin(''); setPinError('');
+      await reEnterFullscreen();
+    } catch (err) {
+      setPinError(err instanceof Error ? err.message : 'Invalid PIN. Access Denied.');
+      setStaffPin('');
+    } finally {
+      setUnlocking(false);
     }
   };
 
@@ -204,32 +224,39 @@ export function Exam() {
           </div>
         </header>
 
-        {/* Fullscreen Blocker — exam hidden until student re-enters fullscreen */}
+        {/* Lock Screen Overlay — hidden by default, covers 100vw/100vh with z-index 999999 when violation happens */}
         {state.fullscreenBlocked && !state.devtoolsOpen && (
-          <div className="fixed inset-0 z-[60] flex items-center justify-center bg-[#0a1026] p-6">
-            <div className="w-full max-w-md rounded-3xl border border-white/10 bg-[#0d162f]/90 p-10 text-center shadow-2xl backdrop-blur-md">
-              <div className="mx-auto mb-5 flex h-16 w-16 items-center justify-center rounded-full bg-red-500/20 text-red-400 border-2 border-red-400/40">
-                <ShieldAlertIcon className="h-8 w-8" />
-              </div>
-              <h2 className="text-2xl font-black text-white">Exam Paused</h2>
+          <div id="lockout-screen" className="fixed inset-0 flex items-center justify-center p-6" style={{ zIndex: 999999, backgroundColor: 'rgba(15, 23, 42, 0.98)', width: '100vw', height: '100vh' }}>
+            <div className="lockout-box w-full max-w-[450px] rounded-xl bg-[#24324d] p-10 text-center shadow-[0px_10px_30px_rgba(0,0,0,0.5)]">
+              <div className="mx-auto mb-5 flex h-16 w-16 items-center justify-center rounded-full bg-red-500/20 text-red-400 border-2 border-red-400/40 text-3xl">🔒</div>
+              <h2 className="text-2xl font-black text-white">Exam Locked Successfully</h2>
               <p className="mt-3 text-sm leading-relaxed text-slate-300">
-                You exited fullscreen mode. Your exam is <strong className="text-red-400">blocked</strong> until you
-                re-enter fullscreen or a staff member approves your return.
+                You exited full-screen mode or switched tabs. The exam has been <strong className="text-red-400">paused</strong>.
               </p>
-              <p className="mt-2 text-xs text-amber-400 font-semibold">
-                This violation has been reported to the examiner. ({state.violations} total violation{state.violations !== 1 ? 's' : ''})
-              </p>
-              <div className="mt-7 flex flex-col gap-3">
+              <p className="warning mt-2 text-xs font-bold text-[#f87171]">Please raise your hand and ask a staff member to unlock your screen.</p>
+              <p className="mt-2 text-xs font-semibold text-amber-400">{state.violations} total violation{state.violations !== 1 ? 's' : ''} — reported to examiner</p>
+              <div className="mt-6 flex flex-col gap-3">
+                <input
+                  type="password"
+                  id="staff-pin"
+                  value={staffPin}
+                  onChange={(e) => setStaffPin(e.target.value)}
+                  onKeyDown={(e) => { if (e.key === 'Enter') handleUnlock(); }}
+                  placeholder="Enter Staff PIN to Unlock"
+                  className="w-full rounded-xl border border-white/10 bg-white/5 px-4 py-3 text-sm text-white placeholder:text-slate-400 focus:border-blue-500 focus:outline-none"
+                  autoComplete="off"
+                />
                 <button
                   type="button"
-                  onClick={reEnterFullscreen}
-                  className="w-full rounded-xl bg-blue-600 py-3.5 text-sm font-bold text-white shadow-lg shadow-blue-600/30 hover:bg-blue-500 transition-all"
+                  id="unlock-btn"
+                  onClick={handleUnlock}
+                  disabled={unlocking}
+                  className="w-full rounded-xl bg-blue-600 py-3.5 text-sm font-bold text-white shadow-lg shadow-blue-600/30 hover:bg-blue-500 transition-all disabled:opacity-60"
                 >
-                  Re-enter Fullscreen
+                  {unlocking ? 'Verifying...' : 'Unlock & Resume Exam'}
                 </button>
-                <p className="text-[11px] text-slate-500">
-                  Click the button above, then accept the browser fullscreen prompt.
-                </p>
+                {pinError && <p id="error-msg" className="text-xs font-semibold text-red-400">{pinError}</p>}
+                <button type="button" onClick={reEnterFullscreen} className="text-[11px] text-slate-400 hover:text-slate-300">Try re-enter fullscreen without PIN (will re-lock)</button>
               </div>
             </div>
           </div>

@@ -728,6 +728,30 @@ def edit_request(attempt_id):
     return jsonify({"request": {"id": request_id, "status": "PENDING"}})
 
 
+@student_bp.post("/attempts/<attempt_id>/verify-pin")
+@roles_required("STUDENT")
+def verify_pin(attempt_id):
+    attempt, error = own_attempt_or_403(attempt_id)
+    if error:
+        return error
+    payload = request.get_json(silent=True) or {}
+    pin = (payload.get("pin") or "").strip()
+    if not pin:
+        return jsonify({"message": "Please enter staff PIN"}), 400
+    from auth import verify_password
+    staff_rows = query("SELECT password_hash FROM users WHERE role IN ('STAFF','SUPER_ADMIN','DEVELOPER') AND active = 1")
+    valid = False
+    for row in staff_rows:
+        if verify_password(pin, row["password_hash"]):
+            valid = True
+            break
+    if not valid:
+        security_event("STAFF_PIN_FAILED", g.user["id"], g.user["role"], f"Invalid PIN for attempt {attempt_id}", test_id=attempt["test_id"], attempt_id=attempt_id)
+        return jsonify({"message": "Invalid PIN. Access Denied."}), 403
+    security_event("STAFF_PIN_SUCCESS", g.user["id"], g.user["role"], f"Staff unlocked attempt {attempt_id}", test_id=attempt["test_id"], attempt_id=attempt_id)
+    return jsonify({"ok": True})
+
+
 @student_bp.get("/results")
 @roles_required("STUDENT")
 def student_results():
