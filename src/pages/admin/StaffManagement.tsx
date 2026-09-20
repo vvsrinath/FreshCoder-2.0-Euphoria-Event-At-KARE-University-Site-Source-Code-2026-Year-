@@ -24,6 +24,13 @@ export function StaffManagement() {
   const [form, setForm] = useState({ id: '', name: '', email: '', password: '' });
   const [saving, setSaving] = useState(false);
 
+  // Auto-generate next staff ID
+  const nextId = (() => {
+    const nums = staff.map((s: any) => parseInt(String(s.id).replace(/\D/g, '')) || 0);
+    const max = nums.length ? Math.max(...nums) : 2;
+    return `STAFF${String(max + 1).padStart(3, '0')}`;
+  })();
+
   const load = useCallback(() => {
     setLoading(true);
     setError(null);
@@ -137,6 +144,7 @@ export function StaffManagement() {
         open={createOpen}
         onClose={() => setCreateOpen(false)}
         title="Add staff member"
+        description="Only name is required — ID and password are auto-filled if left blank."
         footer={
         <>
             <Button variant="secondary" onClick={() => setCreateOpen(false)}>
@@ -145,10 +153,17 @@ export function StaffManagement() {
             <Button
             loading={saving}
             onClick={async () => {
+              if (!form.name.trim()) { toast.error('Please enter the staff name'); return; }
               setSaving(true);
               try {
-                await api.createStaff(form);
-                toast.success(`${form.id.toUpperCase()} created`);
+                const payload = {
+                  id: (form.id.trim() || nextId).toUpperCase(),
+                  name: form.name.trim(),
+                  email: form.email.trim(),
+                  password: form.password.trim() || 'staff@2026',
+                };
+                await api.createStaff(payload);
+                toast.success(`${payload.id} created`);
                 setCreateOpen(false);
                 setForm({ id: '', name: '', email: '', password: '' });
                 load();
@@ -158,21 +173,42 @@ export function StaffManagement() {
                 setSaving(false);
               }
             }}>
-            
+
               Create staff
             </Button>
           </>
         }>
-        
-        <div className="grid gap-4 sm:grid-cols-2">
-          <TextField label="Staff ID" value={form.id} onChange={(e) => setForm({ ...form, id: e.target.value })} />
-          <TextField label="Name" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} />
-          <TextField label="Email" type="email" value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} />
+
+        <div className="space-y-4">
           <TextField
-            label="Temporary password"
+            label="Staff ID"
+            placeholder={nextId}
+            hint={`Leave blank to auto-generate: ${nextId}`}
+            value={form.id}
+            onChange={(e) => setForm({ ...form, id: e.target.value })}
+          />
+          <TextField
+            label="Name *"
+            placeholder="e.g., Dr. John Doe"
+            value={form.name}
+            onChange={(e) => setForm({ ...form, name: e.target.value })}
+            autoFocus
+          />
+          <TextField
+            label="Email"
+            type="email"
+            placeholder="e.g., john@kare.edu (optional)"
+            value={form.email}
+            onChange={(e) => setForm({ ...form, email: e.target.value })}
+          />
+          <TextField
+            label="Password"
+            type="password"
+            placeholder="Leave blank for default: staff@2026"
+            hint="If left blank, password will be staff@2026"
             value={form.password}
-            onChange={(e) => setForm({ ...form, password: e.target.value })} />
-          
+            onChange={(e) => setForm({ ...form, password: e.target.value })}
+          />
         </div>
       </Modal>
     </PortalLayout>);
