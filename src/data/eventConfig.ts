@@ -123,23 +123,22 @@ export const convenors = [
   },
 ] as const;
 
-export const staffCoordinators = [
+export const staffCoordinators = [] as const;
+
+export const studentCoordinators = [
   {
     name: 'Ms. Avula Gowthami',
-    role: 'Staff Coordinator',
+    role: 'Student Coordinator',
   },
   {
     name: 'Ms. R. Kashniha',
-    role: 'Staff Coordinator',
+    role: 'Student Coordinator',
   },
   {
     name: 'Mr. B. Ponmuklan',
-    role: 'Staff Coordinator',
+    role: 'Student Coordinator',
     phone: '+91 63801 12049',
   },
-] as const;
-
-export const studentCoordinators = [
   {
     name: 'Mr. P. Pankaj Kumar Reddy',
     role: 'Student Coordinator',

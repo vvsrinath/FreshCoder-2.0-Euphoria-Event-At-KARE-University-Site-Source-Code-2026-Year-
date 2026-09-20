@@ -154,33 +154,35 @@ export function Convenors() {
             ))}
           </div>
 
-          {/* Staff Coordinators */}
-          <div className="mt-12">
-            <h2 className="text-xl font-black tracking-tight text-slate-900">Staff Coordinators</h2>
-            <p className="mt-1 text-sm text-slate-600">Faculty team coordinating the event.</p>
-            <div className="mt-6 grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
-              {staffCoordinators.map((person, index) => (
-                <article key={person.name} className="rounded-3xl bg-white p-6 shadow-sm ring-1 ring-slate-200 transition-shadow hover:shadow-md">
-                  <div className="flex items-center gap-4">
-                    <span className={`inline-flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br text-base font-black text-white shadow-sm ${AVATAR_TINTS[index % AVATAR_TINTS.length]}`}>
-                      {initials(person.name)}
-                    </span>
-                    <div className="min-w-0">
-                      <h3 className="truncate text-sm font-black tracking-tight text-slate-900">{person.name}</h3>
-                      <p className="mt-0.5 text-xs font-semibold text-indigo-600">{person.role}</p>
+          {/* Staff Coordinators — hidden if none */}
+          {staffCoordinators.length > 0 && (
+            <div className="mt-12">
+              <h2 className="text-xl font-black tracking-tight text-slate-900">Staff Coordinators</h2>
+              <p className="mt-1 text-sm text-slate-600">Faculty team coordinating the event.</p>
+              <div className="mt-6 grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
+                {staffCoordinators.map((person, index) => (
+                  <article key={person.name} className="rounded-3xl bg-white p-6 shadow-sm ring-1 ring-slate-200 transition-shadow hover:shadow-md">
+                    <div className="flex items-center gap-4">
+                      <span className={`inline-flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br text-base font-black text-white shadow-sm ${AVATAR_TINTS[index % AVATAR_TINTS.length]}`}>
+                        {initials(person.name)}
+                      </span>
+                      <div className="min-w-0">
+                        <h3 className="truncate text-sm font-black tracking-tight text-slate-900">{person.name}</h3>
+                        <p className="mt-0.5 text-xs font-semibold text-indigo-600">{person.role}</p>
+                      </div>
                     </div>
-                  </div>
-                  <div className="mt-4 flex flex-wrap gap-2">
-                    {"phone" in person && (person as unknown as { phone: string }).phone && (
-                      <a href={`tel:${(person as unknown as { phone: string }).phone.replace(/\s/g, '')}`} className="inline-flex items-center gap-1.5 rounded-full bg-slate-100 px-3 py-1.5 text-xs font-semibold text-slate-700 hover:bg-slate-200">
-                        <PhoneIcon className="h-3.5 w-3.5" /> {(person as unknown as { phone: string }).phone}
-                      </a>
-                    )}
-                  </div>
-                </article>
-              ))}
+                    <div className="mt-4 flex flex-wrap gap-2">
+                      {"phone" in person && (person as unknown as { phone: string }).phone && (
+                        <a href={`tel:${(person as unknown as { phone: string }).phone.replace(/\s/g, '')}`} className="inline-flex items-center gap-1.5 rounded-full bg-slate-100 px-3 py-1.5 text-xs font-semibold text-slate-700 hover:bg-slate-200">
+                          <PhoneIcon className="h-3.5 w-3.5" /> {(person as unknown as { phone: string }).phone}
+                        </a>
+                      )}
+                    </div>
+                  </article>
+                ))}
+              </div>
             </div>
-          </div>
+          )}
 
           {/* Student Coordinators */}
           <div className="mt-10">
