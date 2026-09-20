@@ -124,6 +124,7 @@ export const studentCoordinators = [
     name: 'Mr.V.V.Srinath',
     role: 'Full Stack Developer · Student Coordinator',
     email: 'vvsrinath0@gmail.com',
+    phone: '+91 94894 25945',
   },
   {
     name: 'Ms. Avula Gowthami',
