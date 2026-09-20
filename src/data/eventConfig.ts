@@ -127,6 +127,11 @@ export const staffCoordinators = [] as const;
 
 export const studentCoordinators = [
   {
+    name: 'Srinath Vatchavari Venkateshan',
+    role: 'Full Stack Developer · Student Coordinator',
+    email: 'vvsrinath0@gmail.com',
+  },
+  {
     name: 'Ms. Avula Gowthami',
     role: 'Student Coordinator',
   },
