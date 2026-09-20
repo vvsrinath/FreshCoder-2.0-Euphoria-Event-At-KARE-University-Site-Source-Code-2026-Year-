@@ -1,4 +1,5 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import {
   EyeIcon,
   PencilIcon,
@@ -10,6 +11,8 @@ import { toast } from 'sonner';
 import { PortalLayout } from '../../components/PortalLayout';
 import { Modal } from '../../components/Modal';
 import { CodeBlock } from '../../components/CodeBlock';
+import { EmptyState } from '../../components/EmptyState';
+import { Button } from '../../components/Button';
 import { QuestionEditor } from './QuestionEditor';
 import { staffNav } from './staffNav';
 import { api } from '../../services/api';
@@ -28,6 +31,7 @@ const TYPE_LABELS: Record<string, string> = {
 };
 
 export function QuestionBank() {
+  const navigate = useNavigate();
   const [questions, setQuestions] = useState<Question[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -175,9 +179,42 @@ export function QuestionBank() {
             {loading ? (
               <div className="p-10 text-center text-sm text-slate-400">Loading questions…</div>
             ) : filtered.length === 0 ? (
-              <div className="p-10 text-center text-sm text-slate-400">
-                No questions match your filters.
-              </div>
+              <EmptyState
+                title={questions.length === 0 ? 'No questions yet' : 'No matches'}
+                description={
+                  questions.length === 0
+                    ? 'Get started by adding your first question.'
+                    : 'No questions match your current filters. Try adjusting your search or filters.'
+                }
+                action={
+                  <div className="flex items-center justify-center gap-2">
+                    <Button
+                      variant="primary"
+                      size="sm"
+                      onClick={() => {
+                        setEditing(null);
+                        setEditorOpen(true);
+                      }}
+                    >
+                      Add Question
+                    </Button>
+                    {(search || typeFilter || difficultyFilter || topicFilter) ? (
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => {
+                          setSearch('');
+                          setTypeFilter('');
+                          setDifficultyFilter('');
+                          setTopicFilter('');
+                        }}
+                      >
+                        Clear filters
+                      </Button>
+                    ) : null}
+                  </div>
+                }
+              />
             ) : (
             <table className="w-full text-left text-xs sm:text-sm">
               <thead className="bg-slate-50 text-[11px] font-bold uppercase tracking-wider text-slate-400 border-b border-slate-100">

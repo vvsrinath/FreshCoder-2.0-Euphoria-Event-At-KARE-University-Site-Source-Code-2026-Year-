@@ -24,6 +24,7 @@ export function LiveMonitoring() {
   const [error, setError] = useState<string | null>(null);
   const [forceTarget, setForceTarget] = useState<any>(null);
   const [busy, setBusy] = useState(false);
+  const [lastUpdated, setLastUpdated] = useState<number | null>(null);
 
   const load = useCallback(() => {
     api.
@@ -31,6 +32,7 @@ export function LiveMonitoring() {
     then((res) => {
       setData(res);
       setError(null);
+      setLastUpdated(Date.now());
     }).
     catch((err) => setError(err.message)).
     finally(() => setLoading(false));
@@ -124,12 +126,16 @@ export function LiveMonitoring() {
       <div className="space-y-5">
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div>
-            <h1 className="text-2xl font-bold text-navy-800">Live monitoring</h1>
+            <div className="flex items-center gap-2">
+              <h1 className="text-2xl font-bold text-navy-800">Live monitoring</h1>
+              <span className="relative flex h-2 w-2"><span className="animate-ping absolute inline-flex h-2 w-2 rounded-full bg-emerald-400 opacity-75" /><span className="relative inline-flex h-2 w-2 rounded-full bg-emerald-500" /></span>
+              <span className="rounded-full border border-emerald-200 bg-emerald-50 px-2 py-0.5 text-[11px] font-bold tracking-wide text-emerald-700">LIVE</span>
+            </div>
             <p className="mt-1 text-sm text-slate-600">
-              Refreshes every {REFRESH_MS / 1000} seconds from the examination server.
+              {lastUpdated ? `Updated ${relativeTime(new Date(lastUpdated).toISOString())} • every ${REFRESH_MS / 1000}s` : `Refreshes every ${REFRESH_MS / 1000}s from the examination server.`}
             </p>
           </div>
-          <Button variant="secondary" size="sm" icon={<RefreshCwIcon className="h-4 w-4" />} onClick={load}>
+          <Button variant="secondary" size="sm" icon={<RefreshCwIcon className={`h-4 w-4 ${loading ? 'animate-spin' : ''}`} />} onClick={load} loading={loading && !!data}>
             Refresh now
           </Button>
         </div>

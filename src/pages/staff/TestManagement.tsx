@@ -11,6 +11,8 @@ import { toast } from 'sonner';
 import { PortalLayout } from '../../components/PortalLayout';
 import { LoadingState } from '../../components/LoadingState';
 import { ErrorState } from '../../components/ErrorState';
+import { EmptyState } from '../../components/EmptyState';
+import { Button } from '../../components/Button';
 import { staffNav } from './staffNav';
 import { api } from '../../services/api';
 import type { Test } from '../../types';
@@ -209,6 +211,19 @@ export function TestManagement() {
               />
               <SearchIcon className="absolute left-3 top-2.5 h-4 w-4 text-slate-400" />
             </div>
+            {(search || typeFilter || statusFilter) && (
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => {
+                  setSearch('');
+                  setTypeFilter('');
+                  setStatusFilter('');
+                }}
+              >
+                Clear
+              </Button>
+            )}
           </div>
 
           {/* Table */}
@@ -227,47 +242,87 @@ export function TestManagement() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100">
-                {filtered.map((row, idx) => (
-                  <tr key={row.id || idx} className="hover:bg-slate-50/70 transition-colors">
-                    <td className="px-5 py-4 font-mono font-medium text-slate-400">{idx + 1}</td>
-                    <td className="px-5 py-4 font-bold text-navy-900">{row.name}</td>
-                    <td className="px-5 py-4 text-slate-600">{row.typeLabel}</td>
-                    <td className="px-5 py-4 text-center font-bold text-navy-800">{row.questionCount}</td>
-                    <td className="px-5 py-4 text-center text-slate-600">{row.durationMinutes} min</td>
-                    <td className="px-5 py-4">{statusBadge(row.status)}</td>
-                    <td className="px-5 py-4 text-slate-600 font-medium">{row.scheduleLabel}</td>
-                    <td className="px-5 py-4 text-right">
-                      <div className="inline-flex items-center gap-2">
-                        <button
-                          type="button"
-                          onClick={() => startTest(row)}
-                          className="rounded-lg p-1.5 text-emerald-600 hover:bg-emerald-50 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
-                          title="Start test"
-                          disabled={!['DRAFT', 'SCHEDULED'].includes(row.status)}
-                        >
-                          <PlayIcon className="h-4 w-4 fill-emerald-600" />
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => navigate(`/staff/tests/${row.id}/edit`)}
-                          className="rounded-lg p-1.5 text-blue-600 hover:bg-blue-50 transition-colors"
-                          title="Edit"
-                        >
-                          <PencilIcon className="h-4 w-4" />
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => deleteTest(row)}
-                          className="rounded-lg p-1.5 text-red-500 hover:bg-red-50 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
-                          title="Archive"
-                          disabled={!['DRAFT', 'SCHEDULED'].includes(row.status)}
-                        >
-                          <Trash2Icon className="h-4 w-4" />
-                        </button>
-                      </div>
+                {filtered.length === 0 ? (
+                  <tr>
+                    <td colSpan={8}>
+                      {tests.length === 0 ? (
+                        <EmptyState
+                          title="No tests yet"
+                          description="Get started by creating your first assessment."
+                          action={
+                            <Button
+                              variant="primary"
+                              size="sm"
+                              onClick={() => navigate('/staff/tests/new')}
+                            >
+                              Create test
+                            </Button>
+                          }
+                        />
+                      ) : (
+                        <EmptyState
+                          title="No matches"
+                          description="No tests match your current filters. Try adjusting your search or filters."
+                          action={
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => {
+                                setSearch('');
+                                setTypeFilter('');
+                                setStatusFilter('');
+                              }}
+                            >
+                              Clear filters
+                            </Button>
+                          }
+                        />
+                      )}
                     </td>
                   </tr>
-                ))}
+                ) : (
+                  filtered.map((row, idx) => (
+                    <tr key={row.id || idx} className="hover:bg-slate-50/70 transition-colors">
+                      <td className="px-5 py-4 font-mono font-medium text-slate-400">{idx + 1}</td>
+                      <td className="px-5 py-4 font-bold text-navy-900">{row.name}</td>
+                      <td className="px-5 py-4 text-slate-600">{row.typeLabel}</td>
+                      <td className="px-5 py-4 text-center font-bold text-navy-800">{row.questionCount}</td>
+                      <td className="px-5 py-4 text-center text-slate-600">{row.durationMinutes} min</td>
+                      <td className="px-5 py-4">{statusBadge(row.status)}</td>
+                      <td className="px-5 py-4 text-slate-600 font-medium">{row.scheduleLabel}</td>
+                      <td className="px-5 py-4 text-right">
+                        <div className="inline-flex items-center gap-2">
+                          <button
+                            type="button"
+                            onClick={() => startTest(row)}
+                            className="rounded-lg p-1.5 text-emerald-600 hover:bg-emerald-50 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+                            title="Start test"
+                            disabled={!['DRAFT', 'SCHEDULED'].includes(row.status)}
+                          >
+                            <PlayIcon className="h-4 w-4 fill-emerald-600" />
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => navigate(`/staff/tests/${row.id}/edit`)}
+                            className="rounded-lg p-1.5 text-blue-600 hover:bg-blue-50 transition-colors"
+                            title="Edit"
+                          >
+                            <PencilIcon className="h-4 w-4" />
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => deleteTest(row)}
+                            className="rounded-lg p-1.5 text-red-500 hover:bg-red-50 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+                            title="Archive"
+                            disabled={!['DRAFT', 'SCHEDULED'].includes(row.status)}
+                          >
+                            <Trash2Icon className="h-4 w-4" />
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  ))
+                )}
               </tbody>
             </table>
           </div>
