@@ -7,11 +7,11 @@ export function GlobalFooter({ className }: { className?: string }) {
   return (
     <footer
       className={cn(
-        'w-full border-t border-slate-800 bg-[#0b1120] text-slate-300 py-8 px-5 sm:px-8',
+        'w-full border-t border-slate-800 bg-[#0b1120] text-slate-300 py-10 px-5 sm:px-8',
         className
       )}
     >
-      <div className="mx-auto flex flex-col md:flex-row items-center justify-between gap-6 max-w-7xl">
+      <div className="mx-auto flex flex-col md:flex-row items-center justify-between gap-4 max-w-7xl">
         {/* Left: University Crest & Name */}
         <div className="flex items-center gap-3">
           <img

@@ -19,18 +19,18 @@ export function UniversityMark({
       <div className={cn('inline-flex items-center', className)}>
         <div
           className={cn(
-            'flex items-center rounded-xl p-1.5 transition-all duration-150',
+            'flex items-center overflow-hidden rounded-xl transition-all duration-150',
             isLight
-              ? 'bg-white/95 backdrop-blur-md shadow-sm border border-white/20 hover:bg-white'
-              : 'bg-transparent'
+              ? 'bg-white shadow-sm ring-1 ring-black/5 p-1'
+              : 'bg-white shadow-sm ring-1 ring-slate-200 p-1'
           )}
         >
           <img
-            src="/kare-banner-text.png"
+            src="/kare-university-banner.png"
             alt="Kalasalingam Academy of Research and Education (Deemed to be University)"
             className={cn(
-              'object-contain drop-shadow-2xs',
-              size === 'sm' ? 'h-8 sm:h-9' : size === 'lg' ? 'h-13 sm:h-15' : 'h-10 sm:h-12'
+              'object-contain rounded-lg',
+              size === 'sm' ? 'h-8 sm:h-9' : size === 'lg' ? 'h-12 sm:h-14' : 'h-10 sm:h-12'
             )}
           />
         </div>

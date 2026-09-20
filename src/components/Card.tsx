@@ -9,7 +9,7 @@ interface CardProps {
 
 export function Card({ children, className, as: Tag = 'div' }: CardProps) {
   return (
-    <Tag className={cn('rounded-lg border border-slate-200 bg-white shadow-card', className)}>
+    <Tag className={cn('rounded-2xl bg-white shadow-sm ring-1 ring-slate-200', className)}>
       {children}
     </Tag>);
 
@@ -29,7 +29,7 @@ export function CardHeader({
   return (
     <div
       className={cn(
-        'flex flex-wrap items-center justify-between gap-3 border-b border-slate-200 px-5 py-4',
+        'flex flex-wrap items-center justify-between gap-3 border-b border-slate-200 px-6 py-4',
         className
       )}>
       

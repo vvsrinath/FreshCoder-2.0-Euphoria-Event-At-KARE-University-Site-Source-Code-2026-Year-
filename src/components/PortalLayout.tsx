@@ -43,7 +43,7 @@ export function PortalLayout({ portalLabel, navItems, children, headerRight }: P
           open ? 'translate-x-0' : '-translate-x-full'
         )}
       >
-        <div className="flex h-18 items-center justify-between border-b border-white/10 px-5">
+        <div className="flex h-16 items-center justify-between border-b border-white/10 px-5">
           <BrandMark tone="light" />
           <button
             type="button"
@@ -65,7 +65,7 @@ export function PortalLayout({ portalLabel, navItems, children, headerRight }: P
                   onClick={() => setOpen(false)}
                   className={({ isActive }) =>
                     cn(
-                      'flex items-center gap-3.5 rounded-xl px-4 py-2.5 text-sm font-semibold transition-all duration-150',
+                      'flex items-center gap-3 rounded-xl px-4 py-2.5 text-sm font-semibold transition-all duration-150',
                       isActive
                         ? 'bg-blue-600 text-white shadow-md shadow-blue-600/30'
                         : 'text-slate-400 hover:bg-white/10 hover:text-white'
@@ -90,7 +90,7 @@ export function PortalLayout({ portalLabel, navItems, children, headerRight }: P
           <button
             type="button"
             onClick={handleLogout}
-            className="flex w-full items-center gap-3.5 rounded-xl px-4 py-2.5 text-sm font-semibold text-slate-400 transition-all hover:bg-white/10 hover:text-white"
+            className="flex w-full items-center gap-3 rounded-xl px-4 py-2.5 text-sm font-semibold text-slate-400 transition-all hover:bg-white/10 hover:text-white"
           >
             <LogOutIcon className="h-4 w-4" />
             Logout
@@ -111,7 +111,7 @@ export function PortalLayout({ portalLabel, navItems, children, headerRight }: P
       <div className="flex min-w-0 flex-1 flex-col justify-between">
         <div>
           {/* Header */}
-          <header className="sticky top-0 z-20 flex h-18 items-center justify-between gap-4 border-b border-slate-200 bg-white px-5 sm:px-8 shadow-xs">
+          <header className="sticky top-0 z-20 flex h-16 items-center justify-between gap-4 border-b border-slate-200 bg-white px-5 sm:px-8 shadow-xs">
             <div className="flex items-center gap-3">
               <button
                 type="button"

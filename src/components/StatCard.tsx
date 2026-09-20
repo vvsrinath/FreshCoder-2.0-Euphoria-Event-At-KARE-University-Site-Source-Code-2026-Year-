@@ -26,11 +26,11 @@ export function StatCard({
   return (
     <div
       className={cn(
-        'rounded-lg border bg-white px-4 py-3 shadow-card',
-        emphasis ? 'border-brand-200 ring-1 ring-brand-100' : 'border-slate-200'
+        'rounded-2xl bg-white p-6 shadow-sm ring-1',
+        emphasis ? 'ring-brand-200' : 'ring-slate-200'
       )}>
       
-      <div className="flex items-start justify-between gap-2">
+      <div className="flex items-start justify-between gap-3">
         <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">{label}</p>
         {icon ? <span className="text-slate-400">{icon}</span> : null}
       </div>

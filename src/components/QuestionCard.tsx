@@ -43,7 +43,7 @@ export function QuestionCard({
   const readOnly = locked && !editGranted;
 
   return (
-    <article className="rounded-2xl border border-slate-200 bg-white p-6 sm:p-8 shadow-sm">
+    <article className="rounded-2xl bg-white p-6 sm:p-8 shadow-sm ring-1 ring-slate-200">
       {/* Header with Badges & Flag */}
       <header className="flex flex-wrap items-center justify-between gap-4 border-b border-slate-100 pb-5">
         <div className="flex flex-wrap items-center gap-3">
