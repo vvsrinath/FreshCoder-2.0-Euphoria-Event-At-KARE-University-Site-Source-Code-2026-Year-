@@ -1,9 +1,11 @@
 import React, { useEffect, useState } from 'react';
 import { NavLink, useNavigate } from 'react-router-dom';
 import { ChevronDownIcon, LogOutIcon, MenuIcon, XIcon, UserIcon } from 'lucide-react';
+import { toast } from 'sonner';
 import { BrandMark } from './BrandMark';
 import { GlobalFooter } from './GlobalFooter';
 import { useAuth } from '../contexts/AuthContext';
+import { api } from '../services/api';
 import { cn } from '../utils/cn';
 
 export interface NavItem {
@@ -34,45 +36,81 @@ export function PortalLayout({ portalLabel, navItems, children, headerRight }: P
   const roleDisplay = isStudent ? 'Student' : 'Staff';
   const defaultId = isStudent ? 'ST2026001' : 'SF2026';
 
-  // Student pages: block copy/paste and DevTools shortcuts via JS
+  // Student pages: HackerRank-style — block copy/paste/cut + log telemetry + disable text selection
   useEffect(() => {
     if (!isStudent) return;
-    const block = (e: Event) => e.preventDefault();
+
+    const logViolation = (event: string, detail: string) => {
+      // Telemetry to backend (fire-and-forget)
+      api.reportEvent(event, detail).catch(() => undefined);
+    };
+
+    const onCopy = (e: ClipboardEvent) => {
+      e.preventDefault();
+      toast.error('Copy is disabled during the examination.');
+      const sel = window.getSelection()?.toString() || '';
+      logViolation('COPY_BLOCKED', `Copy blocked — ${sel.length} chars selected`);
+    };
+    const onCut = (e: ClipboardEvent) => {
+      e.preventDefault();
+      toast.error('Cut is disabled during the examination.');
+      logViolation('COPY_BLOCKED', 'Cut blocked');
+    };
+    const onPaste = (e: ClipboardEvent) => {
+      e.preventDefault();
+      toast.error('Pasting is disabled — please type your answer.');
+      const pasted = (e.clipboardData || (window as unknown as { clipboardData?: DataTransfer }).clipboardData)?.getData('text') || '';
+      logViolation('COPY_BLOCKED', `Paste blocked — ${pasted.length} chars attempted`);
+    };
+    const onContextMenu = (e: MouseEvent) => {
+      e.preventDefault();
+      logViolation('CONTEXT_MENU_BLOCKED', 'Right-click blocked on student portal');
+    };
+    const onDragStart = (e: DragEvent) => e.preventDefault();
     const onKeyDown = (e: KeyboardEvent) => {
       const key = e.key;
       const ctrl = e.ctrlKey || e.metaKey;
       const shift = e.shiftKey;
-      // Block F12 and all function keys, Ctrl+Shift+I/J/C, Ctrl+U/S/P, Alt combos, PrintScreen
       if (/^F\d{1,2}$/.test(key) || key === 'PrintScreen') {
         e.preventDefault(); e.stopPropagation(); (e as unknown as { stopImmediatePropagation: () => void }).stopImmediatePropagation?.();
+        toast.error(`${key} is disabled during the examination.`);
+        logViolation('COPY_BLOCKED', `Function key blocked: ${key}`);
         return;
       }
       if (key === 'Escape') { e.preventDefault(); e.stopPropagation(); return; }
       if (ctrl) {
         const blockList = ['Tab','w','t','n','r','R','i','I','j','J','c','C','u','U','s','S','p','P','a','A','f','F'];
         if (shift) blockList.push('Delete');
-        if (blockList.includes(key)) { e.preventDefault(); e.stopPropagation(); return; }
+        if (blockList.includes(key)) {
+          e.preventDefault(); e.stopPropagation();
+          logViolation('COPY_BLOCKED', `Shortcut blocked: Ctrl+${shift ? 'Shift+' : ''}${key}`);
+          return;
+        }
       }
-      if (e.altKey) { e.preventDefault(); e.stopPropagation(); }
+      if (e.altKey) { e.preventDefault(); e.stopPropagation(); logViolation('COPY_BLOCKED', `Alt+${key} blocked`); }
     };
-    document.addEventListener('contextmenu', block, true);
-    document.addEventListener('copy', block, true);
-    document.addEventListener('cut', block, true);
-    document.addEventListener('paste', block, true);
-    document.addEventListener('dragstart', block, true);
+
+    document.addEventListener('contextmenu', onContextMenu, true);
+    document.addEventListener('copy', onCopy, true);
+    document.addEventListener('cut', onCut, true);
+    document.addEventListener('paste', onPaste, true);
+    document.addEventListener('dragstart', onDragStart, true);
     window.addEventListener('keydown', onKeyDown, true);
     return () => {
-      document.removeEventListener('contextmenu', block, true);
-      document.removeEventListener('copy', block, true);
-      document.removeEventListener('cut', block, true);
-      document.removeEventListener('paste', block, true);
-      document.removeEventListener('dragstart', block, true);
+      document.removeEventListener('contextmenu', onContextMenu, true);
+      document.removeEventListener('copy', onCopy, true);
+      document.removeEventListener('cut', onCut, true);
+      document.removeEventListener('paste', onPaste, true);
+      document.removeEventListener('dragstart', onDragStart, true);
       window.removeEventListener('keydown', onKeyDown, true);
     };
   }, [isStudent]);
 
   return (
-    <div className="flex min-h-screen w-full bg-[#f8fafc]">
+    <div className={cn('flex min-h-screen w-full bg-[#f8fafc]', isStudent && 'secure-zone')}>
+      {isStudent && (
+        <style>{`.secure-zone, .secure-zone * { user-select: none; -webkit-user-select: none; -moz-user-select: none; -ms-user-select: none; } .secure-zone input, .secure-zone textarea { user-select: text; -webkit-user-select: text; }`}</style>
+      )}
       {/* Dark Navy Sidebar */}
       <aside
         className={cn(
