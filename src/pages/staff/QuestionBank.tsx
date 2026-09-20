@@ -41,7 +41,6 @@ export function QuestionBank() {
 
   const [typeFilter, setTypeFilter] = useState('');
   const [difficultyFilter, setDifficultyFilter] = useState('');
-  const [topicFilter, setTopicFilter] = useState('');
   const [search, setSearch] = useState('');
 
   const load = useCallback(() => {
@@ -58,10 +57,7 @@ export function QuestionBank() {
 
   useEffect(load, [load]);
 
-  const topics = useMemo(
-    () => Array.from(new Set(questions.map((q) => q.topic).filter(Boolean))).sort(),
-    [questions]
-  );
+  // Topics available for future use (removed from filter bar for simplicity)
 
   const deleteQuestion = useCallback(
     async (row: Question) => {
@@ -81,11 +77,10 @@ export function QuestionBank() {
     return questions.filter((q) => {
       const matchType = !typeFilter || q.type === typeFilter;
       const matchDiff = !difficultyFilter || q.difficulty === difficultyFilter;
-      const matchTopic = !topicFilter || q.topic === topicFilter;
-      const matchSearch = !search || q.title.toLowerCase().includes(search.toLowerCase());
-      return matchType && matchDiff && matchTopic && matchSearch;
+      const matchSearch = !search || q.title.toLowerCase().includes(search.toLowerCase()) || q.topic.toLowerCase().includes(search.toLowerCase());
+      return matchType && matchDiff && matchSearch;
     });
-  }, [questions, typeFilter, difficultyFilter, topicFilter, search]);
+  }, [questions, typeFilter, difficultyFilter, search]);
 
   return (
     <PortalLayout portalLabel="Staff Portal" navItems={staffNav}>
@@ -115,13 +110,13 @@ export function QuestionBank() {
 
         {/* Filter Bar & Table Card */}
         <div className="rounded-2xl border border-slate-200 bg-white shadow-xs overflow-hidden">
-          {/* Filters Bar */}
-          <div className="flex flex-wrap items-center gap-3.5 border-b border-slate-100 p-4 bg-slate-50/50">
-            <div className="flex-1 min-w-[120px] sm:flex-none sm:w-40">
+          {/* Filters Bar — simplified: 2 dropdowns + search */}
+          <div className="flex flex-wrap items-center gap-3 border-b border-slate-100 p-4 bg-slate-50/50">
+            <div className="w-full sm:w-40">
               <select
                 value={typeFilter}
                 onChange={(e) => setTypeFilter(e.target.value)}
-                className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs sm:text-sm font-medium text-slate-700 focus:border-blue-500 focus:outline-none"
+                className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm font-medium text-slate-700 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/10"
               >
                 <option value="">All Types</option>
                 <option value="MCQ">MCQ</option>
@@ -134,47 +129,35 @@ export function QuestionBank() {
               </select>
             </div>
 
-            <div className="flex-1 min-w-[120px] sm:flex-none sm:w-40">
+            <div className="w-full sm:w-36">
               <select
                 value={difficultyFilter}
                 onChange={(e) => setDifficultyFilter(e.target.value)}
-                className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs sm:text-sm font-medium text-slate-700 focus:border-blue-500 focus:outline-none"
+                className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm font-medium text-slate-700 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/10"
               >
-                <option value="">All Difficulty</option>
+                <option value="">All Levels</option>
                 <option value="EASY">Easy</option>
                 <option value="MEDIUM">Medium</option>
                 <option value="HARD">Hard</option>
               </select>
             </div>
 
-            <div className="flex-1 min-w-[120px] sm:flex-none sm:w-40">
-              <select
-                value={topicFilter}
-                onChange={(e) => setTopicFilter(e.target.value)}
-                className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs sm:text-sm font-medium text-slate-700 focus:border-blue-500 focus:outline-none"
-              >
-                <option value="">All Topics</option>
-                {topics.map((topic) => (
-                  <option key={topic} value={topic}>
-                    {topic}
-                  </option>
-                ))}
-              </select>
-            </div>
-
             <div className="flex-1 min-w-[200px] relative">
               <input
                 type="text"
-                placeholder="Search questions..."
+                placeholder="Search by title or topic..."
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
-                className="w-full rounded-xl border border-slate-200 bg-white pl-9 pr-4 py-2 text-xs sm:text-sm font-medium text-slate-700 placeholder-slate-400 focus:border-blue-500 focus:outline-none"
+                className="w-full rounded-xl border border-slate-200 bg-white pl-10 pr-4 py-2.5 text-sm font-medium text-slate-700 placeholder-slate-400 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/10"
               />
-              <SearchIcon className="absolute left-3 top-2.5 h-4 w-4 text-slate-400" />
+              <SearchIcon className="absolute left-3.5 top-3 h-4 w-4 text-slate-400" />
+              {(search || typeFilter || difficultyFilter) && (
+                <button type="button" onClick={() => { setSearch(''); setTypeFilter(''); setDifficultyFilter(''); }} className="absolute right-3 top-2.5 rounded-lg px-2 py-1 text-xs font-semibold text-slate-500 hover:bg-slate-100">Clear</button>
+              )}
             </div>
           </div>
 
-          {/* Questions Table */}
+          {/* Questions Table — simplified: 4 columns */}
           <div className="overflow-x-auto">
             {loading ? (
               <div className="p-10 text-center text-sm text-slate-400">Loading questions…</div>
@@ -198,7 +181,7 @@ export function QuestionBank() {
                     >
                       Add Question
                     </Button>
-                    {(search || typeFilter || difficultyFilter || topicFilter) ? (
+                    {(search || typeFilter || difficultyFilter) ? (
                       <Button
                         variant="ghost"
                         size="sm"
@@ -206,7 +189,6 @@ export function QuestionBank() {
                           setSearch('');
                           setTypeFilter('');
                           setDifficultyFilter('');
-                          setTopicFilter('');
                         }}
                       >
                         Clear filters
@@ -216,70 +198,45 @@ export function QuestionBank() {
                 }
               />
             ) : (
-            <table className="w-full text-left text-xs sm:text-sm">
+            <table className="w-full text-left text-sm">
               <thead className="bg-slate-50 text-[11px] font-bold uppercase tracking-wider text-slate-400 border-b border-slate-100">
                 <tr>
-                  <th className="px-5 py-3.5 w-16">#</th>
-                  <th className="px-5 py-3.5">Title</th>
-                  <th className="px-5 py-3.5">Type</th>
-                  <th className="px-5 py-3.5">Difficulty</th>
-                  <th className="px-5 py-3.5">Topic</th>
-                  <th className="px-5 py-3.5 text-center">Points</th>
-                  <th className="px-5 py-3.5 text-right">Actions</th>
+                  <th className="px-5 py-3 w-14">#</th>
+                  <th className="px-5 py-3">Question</th>
+                  <th className="px-5 py-3 hidden sm:table-cell">Category</th>
+                  <th className="px-5 py-3 text-right">Actions</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100">
                 {filtered.map((row) => (
                   <tr key={row.id} className="hover:bg-slate-50/70 transition-colors">
-                    <td className="px-5 py-4 font-mono font-bold text-slate-500">{row.id}</td>
-                    <td className="px-5 py-4 font-bold text-navy-900">{row.title}</td>
-                    <td className="px-5 py-4 text-slate-600">{TYPE_LABELS[row.type] ?? row.type}</td>
+                    <td className="px-5 py-4 font-mono text-xs font-bold text-slate-500">{row.id}</td>
                     <td className="px-5 py-4">
-                      {row.difficulty === 'EASY' ? (
-                        <span className="inline-flex items-center rounded-full bg-emerald-50 px-2.5 py-0.5 text-xs font-bold text-emerald-700 border border-emerald-200">
-                          Easy
-                        </span>
-                      ) : row.difficulty === 'MEDIUM' ? (
-                        <span className="inline-flex items-center rounded-full bg-amber-50 px-2.5 py-0.5 text-xs font-bold text-amber-700 border border-amber-200">
-                          Medium
-                        </span>
-                      ) : (
-                        <span className="inline-flex items-center rounded-full bg-red-50 px-2.5 py-0.5 text-xs font-bold text-red-700 border border-red-200">
-                          Hard
-                        </span>
-                      )}
+                      <p className="font-bold text-navy-900 leading-tight">{row.title}</p>
+                      <p className="mt-1 flex flex-wrap items-center gap-2 text-xs">
+                        <span className="text-slate-500">{row.topic || 'General'}</span>
+                        <span className="h-1 w-1 rounded-full bg-slate-300" />
+                        <span className="font-semibold text-slate-600">{row.marks} pts</span>
+                      </p>
+                      <span className="mt-1.5 inline-flex sm:hidden rounded-full bg-slate-100 px-2 py-0.5 text-[11px] font-semibold text-slate-600">{TYPE_LABELS[row.type] ?? row.type}</span>
                     </td>
-                    <td className="px-5 py-4 text-slate-600 font-medium">{row.topic}</td>
-                    <td className="px-5 py-4 text-center font-bold text-navy-800">{row.marks}</td>
+                    <td className="px-5 py-4 hidden sm:table-cell">
+                      <div className="flex flex-col gap-1.5">
+                        <span className="text-xs font-medium text-slate-600">{TYPE_LABELS[row.type] ?? row.type}</span>
+                        {row.difficulty === 'EASY' ? (
+                          <span className="inline-flex w-fit items-center rounded-full bg-emerald-50 px-2 py-0.5 text-[11px] font-bold text-emerald-700 border border-emerald-200">Easy</span>
+                        ) : row.difficulty === 'MEDIUM' ? (
+                          <span className="inline-flex w-fit items-center rounded-full bg-amber-50 px-2 py-0.5 text-[11px] font-bold text-amber-700 border border-amber-200">Medium</span>
+                        ) : (
+                          <span className="inline-flex w-fit items-center rounded-full bg-red-50 px-2 py-0.5 text-[11px] font-bold text-red-700 border border-red-200">Hard</span>
+                        )}
+                      </div>
+                    </td>
                     <td className="px-5 py-4 text-right">
-                      <div className="inline-flex items-center gap-2">
-                        <button
-                          type="button"
-                          onClick={() => setPreview(row)}
-                          className="rounded-lg p-1.5 text-slate-500 hover:bg-slate-100 transition-colors"
-                          title="View"
-                        >
-                          <EyeIcon className="h-4 w-4" />
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => {
-                            setEditing(row);
-                            setEditorOpen(true);
-                          }}
-                          className="rounded-lg p-1.5 text-blue-600 hover:bg-blue-50 transition-colors"
-                          title="Edit"
-                        >
-                          <PencilIcon className="h-4 w-4" />
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => deleteQuestion(row)}
-                          className="rounded-lg p-1.5 text-red-500 hover:bg-red-50 transition-colors"
-                          title="Archive"
-                        >
-                          <Trash2Icon className="h-4 w-4" />
-                        </button>
+                      <div className="inline-flex items-center gap-1">
+                        <button type="button" onClick={() => setPreview(row)} className="rounded-lg p-2 text-slate-500 hover:bg-slate-100 transition-colors" title="View"><EyeIcon className="h-4 w-4" /></button>
+                        <button type="button" onClick={() => { setEditing(row); setEditorOpen(true); }} className="rounded-lg bg-blue-50 p-2 text-blue-600 hover:bg-blue-100 transition-colors" title="Edit"><PencilIcon className="h-4 w-4" /></button>
+                        <button type="button" onClick={() => deleteQuestion(row)} className="rounded-lg p-2 text-slate-400 hover:bg-red-50 hover:text-red-500 transition-colors" title="Archive"><Trash2Icon className="h-4 w-4" /></button>
                       </div>
                     </td>
                   </tr>
