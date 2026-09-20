@@ -1,7 +1,9 @@
 {
-  "name": "magic-patterns-vite-template",
-  "version": "0.0.1",
+  "name": "fresh-coders-2-0-euphoria-2026",
+  "version": "1.0.0",
   "private": true,
+  "author": "Srinath Vatchavari Venkateshan <vvsrinath0@gmail.com> (https://github.com/vvsrinath)",
+  "description": "Fresh Coders 2.0 - Euphoria 2026 examination platform for KARE University. Developed by Srinath Vatchavari Venkateshan.",
   "type": "module",
   "scripts": {
     "dev": "vite",

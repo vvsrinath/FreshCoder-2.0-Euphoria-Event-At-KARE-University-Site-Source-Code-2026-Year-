@@ -1,6 +1,7 @@
 {
-  "name": "magic-patterns-project",
+  "name": "fresh-coders-2-0-euphoria-2026",
   "private": true,
+  "author": "Srinath Vatchavari Venkateshan <vvsrinath0@gmail.com> (https://github.com/vvsrinath)",
   "dependencies": {
     "react": "18.3.1",
     "react-dom": "18.3.1",

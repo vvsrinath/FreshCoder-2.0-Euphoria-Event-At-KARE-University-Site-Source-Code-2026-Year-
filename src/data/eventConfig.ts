@@ -16,7 +16,7 @@ export const brand = {
   motto: 'Knowledge Leads to Freedom',
   quote: 'Code today for a better tomorrow.',
   logos: {
-    university: "/ChatGPT_Image_Sep_19,_2026,_01_11_57_PM.png"
+    university: "/kare-logo.png"
 
   }
 } as const;
