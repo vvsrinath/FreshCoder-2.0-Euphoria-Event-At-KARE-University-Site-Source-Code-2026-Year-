@@ -37,6 +37,8 @@ export function StudentManagement() {
   const fileRef = useRef<HTMLInputElement>(null);
 
   const load = useCallback(() => {
+    setLoading(true);
+    setError(null);
     api.
     students(filters).
     then((res) => {
@@ -50,9 +52,13 @@ export function StudentManagement() {
   useEffect(load, [load]);
 
   const create = async () => {
+    if (!form.id.trim() || !form.name.trim() || !form.email.trim() || !form.password.trim()) {
+      toast.error('All fields are required');
+      return;
+    }
     setSaving(true);
     try {
-      await api.createStudent(form);
+      await api.createStudent({ id: form.id.trim(), name: form.name.trim(), email: form.email.trim(), password: form.password.trim() });
       toast.success(`${form.id.toUpperCase()} created`);
       setCreateOpen(false);
       setForm({ id: '', name: '', email: '', password: '' });
@@ -247,7 +253,11 @@ export function StudentManagement() {
             </Button>
             <Button
             onClick={async () => {
-              await update(editing.id, { name: editing.name, email: editing.email }, 'Student updated');
+              if (!editing.name?.trim() || !(editing.email ?? '').trim()) {
+                toast.error('Name and email are required');
+                return;
+              }
+              await update(editing.id, { name: editing.name.trim(), email: (editing.email ?? '').trim() }, 'Student updated');
               setEditing(null);
             }}>
             
@@ -258,8 +268,8 @@ export function StudentManagement() {
         
         {editing ?
         <div className="grid gap-4 sm:grid-cols-2">
-            <TextField label="Name" value={editing.name} onChange={(e) => setEditing({ ...editing, name: e.target.value })} />
-            <TextField label="Email" value={editing.email} onChange={(e) => setEditing({ ...editing, email: e.target.value })} />
+            <TextField label="Name" value={editing.name ?? ''} onChange={(e) => setEditing({ ...editing, name: e.target.value })} />
+            <TextField label="Email" value={editing.email ?? ''} onChange={(e) => setEditing({ ...editing, email: e.target.value })} />
           </div> :
         null}
       </Modal>

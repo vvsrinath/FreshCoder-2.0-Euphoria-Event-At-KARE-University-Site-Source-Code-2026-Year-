@@ -25,6 +25,8 @@ export function StaffManagement() {
   const [saving, setSaving] = useState(false);
 
   const load = useCallback(() => {
+    setLoading(true);
+    setError(null);
     api.
     staffAccounts({ search }).
     then((res) => {

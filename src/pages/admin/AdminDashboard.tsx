@@ -16,6 +16,8 @@ export function AdminDashboard() {
   const [error, setError] = useState<string | null>(null);
 
   const load = useCallback(() => {
+    setLoading(true);
+    setError(null);
     api.
     adminOverview().
     then((res) => {
@@ -44,24 +46,24 @@ export function AdminDashboard() {
           </div>
 
           <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-            <StatCard label="Students" value={data.stats.students} emphasis hint={`${data.stats.activeStudents} active`} />
-            <StatCard label="Staff accounts" value={data.stats.staff} />
-            <StatCard label="Events" value={data.stats.events} />
-            <StatCard label="Tests" value={data.stats.tests} />
+            <StatCard label="Students" value={data?.stats?.students ?? 0} emphasis hint={`${data?.stats?.activeStudents ?? 0} active`} />
+            <StatCard label="Staff accounts" value={data?.stats?.staff ?? 0} />
+            <StatCard label="Events" value={data?.stats?.events ?? 0} />
+            <StatCard label="Tests" value={data?.stats?.tests ?? 0} />
           </div>
           <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-            <StatCard label="Active questions" value={data.stats.questions} tone="brand" />
-            <StatCard label="Stored results" value={data.stats.results} />
+            <StatCard label="Active questions" value={data?.stats?.questions ?? 0} tone="brand" />
+            <StatCard label="Stored results" value={data?.stats?.results ?? 0} />
           </div>
 
           <div className="grid gap-5 lg:grid-cols-2">
             <Card>
               <CardHeader title="Recent administrative actions" />
-              {data.recentAudit.length === 0 ?
+              {(data?.recentAudit?.length ?? 0) === 0 ?
             <EmptyState title="No actions recorded" /> :
 
             <ul className="divide-y divide-slate-100">
-                  {data.recentAudit.map((entry: any) =>
+                  {(data?.recentAudit ?? []).map((entry: any) =>
               <li key={entry.id} className="flex items-center justify-between gap-4 px-5 py-3">
                       <div className="min-w-0">
                         <p className="truncate text-sm font-medium text-navy-800">
@@ -78,11 +80,11 @@ export function AdminDashboard() {
 
             <Card>
               <CardHeader title="Security signals" />
-              {data.securityEvents.length === 0 ?
+              {(data?.securityEvents?.length ?? 0) === 0 ?
             <EmptyState title="Nothing recorded yet" /> :
 
             <ul className="divide-y divide-slate-100">
-                  {data.securityEvents.map((event: any) =>
+                  {(data?.securityEvents ?? []).map((event: any) =>
               <li key={event.id} className="px-5 py-3">
                       <p className="text-sm font-medium text-navy-800">{titleCase(event.type)}</p>
                       <p className="text-xs text-slate-500">

@@ -38,6 +38,8 @@ export function EventManagement() {
   const [saving, setSaving] = useState(false);
 
   const load = useCallback(() => {
+    setLoading(true);
+    setError(null);
     api.
     events().
     then((res) => {
