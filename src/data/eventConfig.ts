@@ -109,4 +109,39 @@ export const convenors = [
     name: 'Ms. G. Jenitha',
     role: 'Faculty Coordinator · Assistant Professor, KARE',
   },
+  {
+    name: 'Sivasubbramaniyan L',
+    role: 'Faculty Mentor · Developer Mentor of this Site · Assistant Professor, CSE',
+    phone: '+91 63834 34021',
+    highlight: 'faculty-mentor',
+  },
+  {
+    name: 'Srinath Vatchavari Venkateshan',
+    role: 'Full Stack Developer of this Site · 1st Year, Mechanical Engineering — Student Section',
+    email: 'vvsrinath0@gmail.com',
+    highlight: 'student-dev',
+  },
+  {
+    name: 'Ms. Avula Gowthami',
+    role: 'Coordinator',
+  },
+  {
+    name: 'Ms. R. Kashniha',
+    role: 'Coordinator',
+  },
+  {
+    name: 'Mr. B. Ponmuklan',
+    role: 'Coordinator',
+    phone: '+91 63801 12049',
+  },
+  {
+    name: 'Mr. P. Pankaj Kumar Reddy',
+    role: 'Coordinator',
+    phone: '+91 70937 59830',
+  },
+  {
+    name: 'Mr. V. Venkateshan',
+    role: 'Coordinator',
+    phone: '+91 88383 27577',
+  },
 ] as const;

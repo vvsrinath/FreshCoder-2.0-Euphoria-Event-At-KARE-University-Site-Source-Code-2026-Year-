@@ -128,16 +128,28 @@ export function Convenors() {
                       {person.name}
                     </h2>
                     <p className="mt-0.5 text-xs font-semibold text-indigo-600">{person.role}</p>
+                    {(person as unknown as { highlight?: string }).highlight && (
+                      <span className="mt-1 inline-flex rounded-full bg-indigo-50 px-2 py-0.5 text-[10px] font-bold text-indigo-700 ring-1 ring-indigo-200">
+                        {(person as unknown as { highlight: string }).highlight === 'faculty-mentor' ? 'Developer Mentor' : 'Full Stack Developer'}
+                      </span>
+                    )}
                   </div>
                 </div>
-                {"phone" in person && (
-                  <a
-                    href={`tel:${person.phone.replace(/\s/g, '')}`}
-                    className="mt-4 inline-flex items-center gap-1.5 rounded-full bg-slate-100 px-3 py-1.5 text-xs font-semibold text-slate-700 transition-colors hover:bg-slate-200"
-                  >
-                    <PhoneIcon className="h-3.5 w-3.5" /> {person.phone}
-                  </a>
-                )}
+                <div className="mt-4 flex flex-wrap gap-2">
+                  {"email" in person && (person as unknown as { email: string }).email && (
+                    <a href={`mailto:${(person as unknown as { email: string }).email}`} className="inline-flex items-center gap-1.5 rounded-full bg-slate-100 px-3 py-1.5 text-xs font-semibold text-slate-700 hover:bg-slate-200">
+                      {(person as unknown as { email: string }).email}
+                    </a>
+                  )}
+                  {"phone" in person && (person as unknown as { phone: string }).phone && (
+                    <a
+                      href={`tel:${(person as unknown as { phone: string }).phone.replace(/\s/g, '')}`}
+                      className="inline-flex items-center gap-1.5 rounded-full bg-slate-100 px-3 py-1.5 text-xs font-semibold text-slate-700 transition-colors hover:bg-slate-200"
+                    >
+                      <PhoneIcon className="h-3.5 w-3.5" /> {(person as unknown as { phone: string }).phone}
+                    </a>
+                  )}
+                </div>
               </article>
             ))}
           </div>
