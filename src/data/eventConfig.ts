@@ -93,6 +93,12 @@ export const convenors = [
     phone: '+91 96898 52038',
   },
   {
+    name: 'Mr.L.Sivasubbramaniyan',
+    role: 'Faculty Mentor · Developer Mentor of this Site · Assistant Professor, CSE',
+    phone: '+91 63834 34021',
+    highlight: 'faculty-mentor',
+  },
+  {
     name: 'Dr. S. Gowthaman',
     role: 'School Level Coordinator · Associate Professor, KARE',
     phone: '+91 94868 38520',
@@ -109,25 +115,13 @@ export const convenors = [
     name: 'Ms. G. Jenitha',
     role: 'Faculty Coordinator · Assistant Professor, KARE',
   },
-  {
-    name: 'Sivasubbramaniyan L',
-    role: 'Faculty Mentor · Developer Mentor of this Site · Assistant Professor, CSE',
-    phone: '+91 63834 34021',
-    highlight: 'faculty-mentor',
-  },
-  {
-    name: 'Srinath Vatchavari Venkateshan',
-    role: 'Full Stack Developer of this Site · 1st Year, Mechanical Engineering — Student Section',
-    email: 'vvsrinath0@gmail.com',
-    highlight: 'student-dev',
-  },
 ] as const;
 
 export const staffCoordinators = [] as const;
 
 export const studentCoordinators = [
   {
-    name: 'Srinath Vatchavari Venkateshan',
+    name: 'Mr.V.V.Srinath',
     role: 'Full Stack Developer · Student Coordinator',
     email: 'vvsrinath0@gmail.com',
   },
