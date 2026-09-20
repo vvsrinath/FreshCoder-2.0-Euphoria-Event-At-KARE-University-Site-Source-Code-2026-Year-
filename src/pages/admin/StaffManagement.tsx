@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { KeyRoundIcon, PlusIcon, SearchIcon } from 'lucide-react';
 import { toast } from 'sonner';
 import { PortalLayout } from '../../components/PortalLayout';
@@ -24,12 +24,13 @@ export function StaffManagement() {
   const [form, setForm] = useState({ id: '', name: '', email: '', password: '' });
   const [saving, setSaving] = useState(false);
 
-  // Auto-generate next staff ID
-  const nextId = (() => {
+  // Auto-generate next staff ID — memoised so input focus isn't stolen on every keystroke
+  const nextId = useMemo(() => {
     const nums = staff.map((s: any) => parseInt(String(s.id).replace(/\D/g, '')) || 0);
     const max = nums.length ? Math.max(...nums) : 2;
     return `STAFF${String(max + 1).padStart(3, '0')}`;
-  })();
+  }, [staff]);
+  const handleClose = useCallback(() => setCreateOpen(false), []);
 
   const load = useCallback(() => {
     setLoading(true);
@@ -142,12 +143,12 @@ export function StaffManagement() {
 
       <Modal
         open={createOpen}
-        onClose={() => setCreateOpen(false)}
+        onClose={handleClose}
         title="Add staff member"
         description="Only name is required — ID and password are auto-filled if left blank."
         footer={
         <>
-            <Button variant="secondary" onClick={() => setCreateOpen(false)}>
+            <Button variant="secondary" onClick={handleClose}>
               Cancel
             </Button>
             <Button
@@ -192,7 +193,6 @@ export function StaffManagement() {
             placeholder="e.g., Dr. John Doe"
             value={form.name}
             onChange={(e) => setForm({ ...form, name: e.target.value })}
-            autoFocus
           />
           <TextField
             label="Email"
