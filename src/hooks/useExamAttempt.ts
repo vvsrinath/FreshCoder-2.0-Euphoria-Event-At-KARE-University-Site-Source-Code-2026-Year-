@@ -275,12 +275,25 @@ export function useExamAttempt(testId: string) {
       }));
     };
 
+    const doLock = (reason: string, detail: string) => {
+      if (stateRef.current.submitted || stateRef.current.fullscreenBlocked) return;
+      report(reason, detail);
+      bumpViolation(detail);
+      setState((prev) => ({ ...prev, fullscreenBlocked: true, violationMessage: detail }));
+    };
+
     const onVisibility = () => {
       if (document.hidden && !stateRef.current.submitted) {
-        report('TAB_VISIBILITY_CHANGE', 'Tab hidden — exam left focus');
-        bumpViolation('You switched tabs or windows. This has been reported to the examiner.');
-        setState((prev) => ({ ...prev, fullscreenBlocked: true, violations: prev.violations + 1, violationMessage: 'You switched tabs. The exam is locked until staff unlocks it.' }));
+        doLock('TAB_VISIBILITY_CHANGE', 'You switched tabs or minimized. The exam is locked until staff unlocks it.');
       }
+    };
+    const onBlur = () => {
+      if (document.hidden || stateRef.current.submitted) return;
+      // Any window blur (Alt+Tab, click outside, multitask) → lock
+      doLock('WINDOW_BLUR', 'You left the exam window (multitasking detected). The exam is locked until staff unlocks it.');
+    };
+    const onPageHide = () => {
+      if (!stateRef.current.submitted) doLock('PAGE_HIDE', 'You navigated away. The exam is locked.');
     };
 
     const onFullscreen = () => {
@@ -476,6 +489,20 @@ export function useExamAttempt(testId: string) {
 
     const devtoolsInterval = window.setInterval(detectDevTools, 500);
 
+    // Multitask / focus-loss polling — catches Alt+Tab, Win+Tab, split-screen, clicking outside
+    const focusInterval = window.setInterval(() => {
+      if (!document.hasFocus() && !document.hidden && !stateRef.current.submitted && !stateRef.current.fullscreenBlocked) {
+        doLock('FOCUS_LOST', 'You left the exam window (multitasking detected). The exam is locked until staff unlocks it.');
+      }
+    }, 700);
+
+    const onResize = () => {
+      if (!document.fullscreenElement && !stateRef.current.submitted && !stateRef.current.fullscreenBlocked && document.hasFocus()) {
+        const isSplit = window.outerWidth < window.screen.width * 0.9 || window.outerHeight < window.screen.height * 0.9;
+        if (isSplit) report('WINDOW_RESIZE', `Window resized ${window.outerWidth}x${window.outerHeight}`);
+      }
+    };
+
     // Override console methods to make DevTools console useless
     const noop = () => {};
     const origLog = console.log;
@@ -501,6 +528,9 @@ export function useExamAttempt(testId: string) {
     document.addEventListener('fullscreenchange', onFullscreen, true);
     document.addEventListener('contextmenu', onContextMenu, true);
     window.addEventListener('beforeunload', onBeforeUnload, true);
+    window.addEventListener('blur', onBlur, true);
+    window.addEventListener('pagehide', onPageHide, true);
+    window.addEventListener('resize', onResize, true);
     window.addEventListener('keydown', onKeyDown, true);
     window.addEventListener('keyup', (e: KeyboardEvent) => {
       e.stopPropagation();
@@ -520,6 +550,7 @@ export function useExamAttempt(testId: string) {
     }, true);
     return () => {
       window.clearInterval(devtoolsInterval);
+      window.clearInterval(focusInterval);
       // Restore console
       console.log = origLog;
       console.warn = origWarn;
@@ -532,6 +563,9 @@ export function useExamAttempt(testId: string) {
       document.removeEventListener('fullscreenchange', onFullscreen, true);
       document.removeEventListener('contextmenu', onContextMenu, true);
       window.removeEventListener('beforeunload', onBeforeUnload, true);
+      window.removeEventListener('blur', onBlur, true);
+      window.removeEventListener('pagehide', onPageHide, true);
+      window.removeEventListener('resize', onResize, true);
       window.removeEventListener('keydown', onKeyDown, true);
       document.removeEventListener('paste', onPaste, true);
       document.removeEventListener('copy', onCopy, true);
