@@ -8,7 +8,7 @@ import { TextField } from '../../components/TextField';
 import { LoadingState } from '../../components/LoadingState';
 import { ErrorState } from '../../components/ErrorState';
 import { EmptyState } from '../../components/EmptyState';
-import { staffNav } from './staffNav';
+import { StaffNavFooter, staffNav } from './staffNav';
 import { api } from '../../services/api';
 import { formatDateTime, titleCase } from '../../utils/format';
 
@@ -46,11 +46,11 @@ export function SecurityEvents() {
 
 
   return (
-    <PortalLayout portalLabel="Staff Portal" navItems={staffNav}>
+    <PortalLayout portalLabel="Staff Portal" navItems={staffNav} navFooter={<StaffNavFooter />}>
       <div className="space-y-5">
         <div>
-          <h1 className="text-2xl font-bold text-navy-800">Security events</h1>
-          <p className="mt-1 text-sm text-slate-600">
+          <h1 className="text-2xl sm:text-3xl font-black text-navy-900 tracking-tight">Security</h1>
+          <p className="mt-1 text-xs sm:text-sm text-slate-500 font-medium">
             Monitoring signals recorded by the platform. These are indicators for review — they do
             not by themselves prove misconduct.
           </p>

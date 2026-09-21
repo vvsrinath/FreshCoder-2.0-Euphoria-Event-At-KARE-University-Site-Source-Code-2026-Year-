@@ -167,6 +167,37 @@ def report_event():
     return jsonify({"ok": True})
 
 
+@auth_bp.post("/change-password")
+@login_required
+def change_password():
+    payload = request.get_json(silent=True) or {}
+    current = payload.get("currentPassword") or ""
+    next_password = payload.get("newPassword") or ""
+    error = _validate_password(next_password)
+    if error:
+        return jsonify(error), 400
+    row = query_one("SELECT password_hash FROM users WHERE id = ?", (g.user["id"],))
+    if row is None:
+        return jsonify({"message": "Account not found."}), 404
+    if not verify_password(current, row["password_hash"]):
+        security_event(
+            "PASSWORD_CHANGE_FAILED",
+            g.user["id"],
+            g.user["role"],
+            "Wrong current password",
+        )
+        return jsonify({"message": "Your current password is incorrect."}), 400
+    if verify_password(next_password, row["password_hash"]):
+        return jsonify({"message": "New password must be different."}), 400
+    execute(
+        "UPDATE users SET password_hash = ? WHERE id = ?",
+        (hash_password(next_password), g.user["id"]),
+    )
+    security_event("PASSWORD_CHANGED", g.user["id"], g.user["role"], "Password changed")
+    audit(g.user["id"], g.user["role"], "Changed password", g.user["id"])
+    return jsonify({"ok": True})
+
+
 def _validate_password(password: str):
     if len(password) < MIN_PASSWORD_LENGTH:
         return {

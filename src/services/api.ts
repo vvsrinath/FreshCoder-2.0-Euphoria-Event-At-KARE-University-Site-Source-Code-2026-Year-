@@ -84,6 +84,8 @@ export const api = {
   ),
   logout: () => request<{ok: boolean;}>('POST', '/api/auth/logout'),
   me: () => request<{user: {id: string;role: string;name: string;email: string;};}>('GET', '/api/auth/me'),
+  changePassword: (currentPassword: string, newPassword: string) =>
+  request<{ok: boolean;}>('POST', '/api/auth/change-password', { currentPassword, newPassword }),
   reportEvent: (type: string, detail: string, attemptId?: string) =>
   request<{ok: boolean;}>('POST', '/api/auth/security-event', { type, detail, attemptId }),
 
@@ -107,20 +109,29 @@ export const api = {
   verifyStaffPin: (attemptId: string, pin: string) =>
     request<any>('POST', `/api/student/attempts/${attemptId}/verify-pin`, { pin }),
 
-  // ---- staff ----
+  // ---- tests ----
   staffDashboard: () => request<any>('GET', '/api/staff/dashboard'),
   tests: () => request<any>('GET', '/api/staff/tests'),
   test: (id: string) => request<any>('GET', `/api/staff/tests/${id}`),
   createTest: (payload: unknown) => request<any>('POST', '/api/staff/tests', payload),
   updateTest: (id: string, payload: unknown) => request<any>('PUT', `/api/staff/tests/${id}`, payload),
   duplicateTest: (id: string) => request<any>('POST', `/api/staff/tests/${id}/duplicate`),
-  scheduleTest: (id: string, scheduledStart: string) =>
+  scheduleTest: (id: string, scheduledStart: string | null) =>
   request<any>('POST', `/api/staff/tests/${id}/schedule`, { scheduledStart }),
   startTestAsStaff: (id: string) => request<any>('POST', `/api/staff/tests/${id}/start`),
   stopTest: (id: string) => request<any>('POST', `/api/staff/tests/${id}/stop`),
   forceStopTest: (id: string) => request<any>('POST', `/api/staff/tests/${id}/force-stop`),
   deleteTest: (id: string) => request<any>('DELETE', `/api/staff/tests/${id}`),
   timingChanges: (id: string) => request<any>('GET', `/api/staff/tests/${id}/timing-changes`),
+
+  // ---- questions (inside a test) ----
+  testQuestions: (id: string) => request<any>('GET', `/api/staff/tests/${id}/questions`),
+  addTestQuestion: (id: string, payload: unknown) =>
+  request<any>('POST', `/api/staff/tests/${id}/questions`, payload),
+  importTestQuestions: (id: string, rows: Record<string, unknown>[]) =>
+  request<any>('POST', `/api/staff/tests/${id}/questions/import`, { rows }),
+  reorderTestQuestions: (id: string, orderedIds: string[]) =>
+  request<any>('PUT', `/api/staff/tests/${id}/questions`, { orderedIds }),
 
   // ---- questions ----
   questions: (filters: Record<string, string | undefined> = {}) =>
@@ -132,7 +143,10 @@ export const api = {
   duplicateQuestion: (id: string) => request<any>('POST', `/api/questions/${id}/duplicate`),
 
   // ---- monitoring ----
-  live: () => request<any>('GET', '/api/staff/live'),
+  live: (filters: Record<string, string | undefined> = {}) =>
+  request<any>('GET', `/api/staff/live${qs(filters)}`),
+  staffStudents: (filters: Record<string, string | undefined> = {}) =>
+  request<any>('GET', `/api/staff/students${qs(filters)}`),
   lockStudent: (id: string, reason: string) =>
   request<any>('POST', `/api/staff/students/${id}/lock`, { reason }),
   unlockStudent: (id: string, reason: string) =>

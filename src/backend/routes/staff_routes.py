@@ -608,6 +608,7 @@ def archive_question(question_id):
         return jsonify({"message": "Question not found."}), 404
     # Never hard-delete: historical attempts reference this row.
     execute("UPDATE questions SET status = 'ARCHIVED' WHERE id = ?", (question_id,))
+    execute("DELETE FROM test_questions WHERE question_id = ?", (question_id,))
     audit(g.user["id"], g.user["role"], "Archived question", question_id, row["title"])
     return jsonify({"ok": True})
 
@@ -637,15 +638,226 @@ def duplicate_question(question_id):
     return jsonify({"question": question_to_json(query_one("SELECT * FROM questions WHERE id = ?", (copy_id,)))})
 
 
+# ------------------------------------------------- questions inside a test
+_CSV_TYPE_MAP = {
+    "MCQ": "MCQ",
+    "TRUE_FALSE": "TRUE_FALSE",
+    "FILL_BLANK": "FILL_BLANK",
+    "OUTPUT_PREDICTION": "OUTPUT",
+    "OUTPUT": "OUTPUT",
+    "CODE_COMPLETION": "CODE_COMPLETION",
+    "DEBUGGING": "DEBUGGING",
+    "CODING": "CODING",
+    "SHORT_ANSWER": "FILL_BLANK",
+}
+
+
+def insert_question_for_test(test_id: str, body: dict, user) -> str:
+    question = str((body.get("question") or body.get("prompt") or "") or "").strip()
+    if not question:
+        raise ValueError("Question text is required.")
+    qtype = body.get("type") or "MCQ"
+    if qtype not in QUESTION_TYPES:
+        raise ValueError(f"Unknown question type: {qtype}")
+    difficulty = body.get("difficulty") or "EASY"
+    if difficulty not in DIFFICULTIES:
+        raise ValueError("Unknown difficulty.")
+    try:
+        marks = safe_int(body.get("marks"), "Marks", default=1, minimum=1, maximum=100)
+    except ValueError:
+        raise ValueError("Marks must be a whole number between 1 and 100.")
+
+    question_id = f"Q{uuid.uuid4().hex[:6].upper()}"
+    title = str(body.get("title") or question[:80])[:500]
+    options = json.dumps(body["options"]) if body.get("options") else None
+    execute(
+        "INSERT INTO questions (id, version, title, type, topic, difficulty, marks, status, prompt,"
+        " code, options, answer, alternatives, explanation, input_format, output_format, constraints,"
+        " sample_input, sample_output, test_cases, created_by, created_at)"
+        " VALUES (?,1,?,?,?,?,?,'ACTIVE',?,?,?,?,?,?,?,?,?,?,?,?,?,?)",
+        (
+            question_id, title, qtype, str(body.get("topic") or "General")[:100],
+            difficulty, marks,
+            question, body.get("code") or None,
+            options,
+            str(body.get("answer") or body.get("correctAnswer") or ""),
+            json.dumps(body.get("alternatives") if isinstance(body.get("alternatives"), list) else []),
+            body.get("explanation") or None,
+            body.get("inputFormat") or None, body.get("outputFormat") or None,
+            body.get("constraints") or None, body.get("sampleInput") or None,
+            body.get("sampleOutput") or None,
+            json.dumps(body.get("testCases") if isinstance(body.get("testCases"), list) else []),
+            user["id"], utc_now(),
+        ),
+    )
+    row = query_one("SELECT COALESCE(MAX(position), 0) n FROM test_questions WHERE test_id = ?", (test_id,))
+    position = (row["n"] or 0) + 1
+    execute(
+        "INSERT INTO test_questions (test_id, question_id, position) VALUES (?, ?, ?)",
+        (test_id, question_id, position),
+    )
+    audit(user["id"], user["role"], "Created question", question_id, question)
+    return question_id
+
+
+def normalize_csv_row(raw: dict, line: int) -> dict:
+    question = str(raw.get("question") or raw.get("prompt") or "").strip()
+    if not question:
+        raise ValueError(f'Row {line}: "question" is required.')
+    qtype = _CSV_TYPE_MAP.get(str(raw.get("type") or "").strip().upper())
+    if not qtype:
+        raise ValueError(f'Row {line}: unknown question type "{raw.get("type")}".')
+    try:
+        marks = int(raw.get("marks") or 1)
+    except (TypeError, ValueError):
+        raise ValueError(f'Row {line}: "marks" must be a whole number.')
+    if marks < 1:
+        raise ValueError(f'Row {line}: "marks" must be a whole number.')
+    difficulty = str(raw.get("difficulty") or "").upper()
+    if difficulty not in DIFFICULTIES:
+        difficulty = "EASY"
+    options = [str(o) for o in (raw.get("option_a"), raw.get("option_b"), raw.get("option_c"), raw.get("option_d")) if str(o or "").strip() != ""]
+    keywords = [k.strip() for k in str(raw.get("keywords") or "").split(",") if k.strip()]
+    expected = str(raw.get("expected_output") or raw.get("answer") or raw.get("correctAnswer") or "").strip()
+    correct = str(raw.get("correct_answer") or raw.get("correctAnswer") or "").strip()
+
+    if qtype == "MCQ":
+        if len(options) < 2:
+            raise ValueError(f"Row {line}: MCQ questions need at least two options.")
+        if len(correct) == 1 and correct.upper() in ("A", "B", "C", "D"):
+            answer = str(ord(correct.upper()) - 65)
+        elif correct:
+            found = next((i for i, o in enumerate(options) if o.lower() == correct.lower()), None)
+            answer = str(found) if found is not None else correct
+        else:
+            raise ValueError(f"Row {line}: MCQ questions need a correct answer (A–D or the option text).")
+    elif qtype == "TRUE_FALSE":
+        answer = "true" if str(raw.get("correct_answer") or raw.get("correctAnswer") or "").strip().lower() in ("true", "t", "yes", "1") else "false"
+    else:
+        answer = expected or correct
+        if not answer:
+            raise ValueError(f"Row {line}: a correct answer is required for {qtype} questions.")
+
+    return {
+        "question": question,
+        "title": str(raw.get("title") or "").strip() or question[:80],
+        "type": qtype,
+        "marks": marks,
+        "topic": str(raw.get("topic") or "").strip() or "General",
+        "difficulty": difficulty,
+        "options": options or None,
+        "answer": answer,
+        "alternatives": keywords,
+        "explanation": str(raw.get("explanation") or "").strip() or None,
+    }
+
+
+@staff_bp.get("/staff/tests/<test_id>/questions")
+@roles_required(*STAFF)
+def test_questions(test_id):
+    row = query_one("SELECT * FROM tests WHERE id = ?", (test_id,))
+    if row is None:
+        return jsonify({"message": "Test not found."}), 404
+    rows = query(
+        "SELECT q.*, tq.position FROM test_questions tq JOIN questions q ON q.id = tq.question_id"
+        " WHERE tq.test_id = ? ORDER BY tq.position",
+        (test_id,),
+    )
+    return jsonify(
+        {
+            "questions": [question_to_json(r) for r in rows],
+            "total": len(rows),
+            "totalMarks": sum(r["marks"] for r in rows),
+        }
+    )
+
+
+@staff_bp.post("/staff/tests/<test_id>/questions")
+@roles_required(*STAFF)
+def add_test_question(test_id):
+    row = query_one("SELECT * FROM tests WHERE id = ?", (test_id,))
+    if row is None:
+        return jsonify({"message": "Test not found."}), 404
+    if row["status"] not in ("DRAFT", "SCHEDULED"):
+        return jsonify({"message": "Questions can only be added while the test is not live."}), 409
+    try:
+        qid = insert_question_for_test(test_id, request.get_json(silent=True) or {}, g.user)
+    except ValueError as error:
+        return jsonify({"message": str(error)}), 400
+    return jsonify({"question": question_to_json(query_one("SELECT * FROM questions WHERE id = ?", (qid,)))})
+
+
+@staff_bp.post("/staff/tests/<test_id>/questions/import")
+@roles_required(*STAFF)
+def import_test_questions(test_id):
+    row = query_one("SELECT * FROM tests WHERE id = ?", (test_id,))
+    if row is None:
+        return jsonify({"message": "Test not found."}), 404
+    if row["status"] not in ("DRAFT", "SCHEDULED"):
+        return jsonify({"message": "Questions can only be added while the test is not live."}), 409
+    rows = request.get_json(silent=True) or {}
+    rows = rows.get("rows") if isinstance(rows, dict) else rows
+    if not isinstance(rows, list) or not rows:
+        return jsonify({"message": "No questions to import."}), 400
+    imported = 0
+    errors = []
+    for i, raw in enumerate(rows):
+        try:
+            normalized = normalize_csv_row(raw if isinstance(raw, dict) else {}, i + 1)
+            insert_question_for_test(test_id, normalized, g.user)
+            imported += 1
+        except ValueError as error:
+            errors.append({"line": i + 1, "message": str(error)})
+    audit(g.user["id"], g.user["role"], "Imported questions", row["name"], f"{imported} imported, {len(errors)} errors")
+    fresh = query(
+        "SELECT q.*, tq.position FROM test_questions tq JOIN questions q ON q.id = tq.question_id"
+        " WHERE tq.test_id = ? ORDER BY tq.position",
+        (test_id,),
+    )
+    return jsonify(
+        {
+            "imported": imported,
+            "errors": errors,
+            "total": len(fresh),
+            "totalMarks": sum(r["marks"] for r in fresh),
+            "questions": [question_to_json(r) for r in fresh],
+        }
+    )
+
+
+@staff_bp.put("/staff/tests/<test_id>/questions")
+@roles_required(*STAFF)
+def reorder_test_questions(test_id):
+    ordered_ids = (request.get_json(silent=True) or {}).get("orderedIds")
+    if not isinstance(ordered_ids, list):
+        return jsonify({"message": "An orderedIds array is required."}), 400
+    owned = {r["question_id"] for r in query("SELECT question_id FROM test_questions WHERE test_id = ?", (test_id,))}
+    for qid in ordered_ids:
+        if str(qid) not in owned:
+            return jsonify({"message": f"Question {qid} does not belong to this test."}), 400
+    for i, qid in enumerate(ordered_ids):
+        execute(
+            "UPDATE test_questions SET position = ? WHERE test_id = ? AND question_id = ?",
+            (i + 1, test_id, str(qid)),
+        )
+    audit(g.user["id"], g.user["role"], "Reordered questions", test_id)
+    return jsonify({"ok": True})
+
+
 # ---------------------------------------------------------------- monitoring
 @staff_bp.get("/staff/live")
 @roles_required(*STAFF)
 def live():
+    test_id = request.args.get("testId")
+    if test_id:
+        attempts = query("SELECT * FROM attempts WHERE test_id = ?", (test_id,))
+    else:
+        attempts = query("SELECT * FROM attempts")
     rows = []
-    for attempt in query("SELECT * FROM attempts"):
+    for attempt in attempts:
         answers = query("SELECT * FROM answers WHERE attempt_id = ?", (attempt["id"],))
         student = query_one("SELECT name FROM users WHERE id = ?", (attempt["student_id"],))
-        test = query_one("SELECT name FROM tests WHERE id = ?", (attempt["test_id"],))
+        test = query_one("SELECT name, status FROM tests WHERE id = ?", (attempt["test_id"],))
         events = query_one(
             "SELECT COUNT(*) n FROM security_events WHERE attempt_id = ?", (attempt["id"],)
         )
@@ -665,16 +877,33 @@ def live():
                 "securityEvents": events["n"],
             }
         )
+    final_statuses = ("SUBMITTED", "FORCE_SUBMITTED", "TIME_EXPIRED")
+    test = query_one("SELECT * FROM tests WHERE id = ?", (test_id,)) if test_id else None
     return jsonify(
         {
             "rows": rows,
+            "test": test_to_json(test) if test else None,
             "stats": {
                 "total": query_one("SELECT COUNT(*) n FROM users WHERE role='STUDENT'")["n"],
-                "active": len([r for r in rows if r["status"] == "IN_PROGRESS"]),
-                "submitted": len([r for r in rows if r["status"] in ("SUBMITTED", "FORCE_SUBMITTED", "TIME_EXPIRED")]),
+                "active": len([r for r in rows if r["status"] in active_statuses]),
+                "submitted": len([r for r in rows if r["status"] in final_statuses]),
                 "locked": len([r for r in rows if r["status"] == "LOCKED"]),
                 "disconnected": len([r for r in rows if r["status"] == "DISCONNECTED"]),
-                "securityEvents": query_one("SELECT COUNT(*) n FROM security_events")["n"],
+                "securityEvents": query_one(
+                    "SELECT COUNT(*) n FROM security_events"
+                    + (" WHERE test_id = ?" if test_id else ""),
+                    (test_id,) if test_id else (),
+                )["n"],
+                "pendingEdit": query_one(
+                    "SELECT COUNT(*) n FROM edit_requests WHERE status='PENDING'"
+                    + (" AND test_id = ?" if test_id else ""),
+                    (test_id,) if test_id else (),
+                )["n"],
+                "activeTests": query_one(
+                    "SELECT COUNT(*) n FROM tests WHERE status='ACTIVE'"
+                    + (" AND id = ?" if test_id else ""),
+                    (test_id,) if test_id else (),
+                )["n"],
             },
             "serverTime": utc_now(),
         }
@@ -733,6 +962,48 @@ def force_submit_student(student_id):
     audit(g.user["id"], g.user["role"], "Force submitted student", student_id,
           f"score {result['score']}/{result['maxScore']}")
     return jsonify({"ok": True, "result": result})
+
+
+# ---------------------------------------------------------------- roster
+@staff_bp.get("/staff/students")
+@roles_required(*STAFF)
+def staff_students():
+    sql = "SELECT * FROM users WHERE role = 'STUDENT'"
+    params = []
+    search = request.args.get("search")
+    if search:
+        sql += " AND (LOWER(id) LIKE ? OR LOWER(name) LIKE ?)"
+        term = f"%{search.lower()}%"
+        params.extend([term, term])
+    students = []
+    for r in query(sql + " ORDER BY id", tuple(params)):
+        latest = query_one(
+            "SELECT a.*, t.name AS test_name FROM attempts a JOIN tests t ON t.id = a.test_id"
+            " WHERE a.student_id = ? ORDER BY COALESCE(a.started_at, a.last_activity) DESC LIMIT 1",
+            (r["id"],),
+        )
+        taken = query_one(
+            "SELECT COUNT(DISTINCT test_id) n FROM attempts WHERE student_id = ?", (r["id"],)
+        )["n"]
+        students.append(
+            {
+                "id": r["id"],
+                "name": r["name"],
+                "email": r["email"],
+                "active": bool(r["active"]),
+                "takenTests": taken,
+                "currentStatus": latest["status"] if latest else "NOT_STARTED",
+                "currentTest": latest["test_name"] if latest else None,
+                "lastActivity": latest["last_activity"] if latest else None,
+            }
+        )
+    return jsonify(
+        {
+            "total": len(students),
+            "activeCount": len([s for s in students if s["active"]]),
+            "students": students,
+        }
+    )
 
 
 # ---------------------------------------------------------------- edit requests

@@ -9,7 +9,7 @@ import { TextField } from '../../components/TextField';
 import { TextAreaField } from '../../components/TextAreaField';
 import { SelectField } from '../../components/SelectField';
 import { LoadingState } from '../../components/LoadingState';
-import { staffNav } from './staffNav';
+import { StaffNavFooter, staffNav } from './staffNav';
 import { api } from '../../services/api';
 import { questionTypeLabels, testTypeLabels } from '../../services/evaluation';
 import type { QuestionType, SelectionMode, TestType } from '../../types';
@@ -96,11 +96,12 @@ export function TestBuilder() {
       if (editing && id) {
         await api.updateTest(id, payload);
         toast.success('Test updated');
+        navigate('/staff/tests');
       } else {
-        await api.createTest(payload);
+        const res = await api.createTest(payload);
         toast.success('Test created');
+        navigate(`/staff/tests/${res.test.id}`);
       }
-      navigate('/staff/tests');
     } catch (err) {
       toast.error((err as Error).message);
     } finally {
@@ -109,7 +110,7 @@ export function TestBuilder() {
   };
 
   return (
-    <PortalLayout portalLabel="Staff Portal" navItems={staffNav}>
+    <PortalLayout portalLabel="Staff Portal" navItems={staffNav} navFooter={<StaffNavFooter />}>
       {loading ?
       <LoadingState label="Loading test…" /> :
 
@@ -212,9 +213,10 @@ export function TestBuilder() {
               </div>
 
               <div className="rounded-xl bg-blue-50 p-4 ring-1 ring-blue-200">
-                <p className="text-sm font-bold text-blue-900">How to add questions</p>
+                <p className="text-sm font-bold text-blue-900">After creating the test</p>
                 <p className="mt-1 text-xs leading-relaxed text-blue-700">
-                  Go to <strong>Questions</strong> → add via <strong>CSV file</strong> or <strong>manual entry</strong>. Then pick them for this test.
+                  You land in the test workspace, where you add questions one by one or import from a
+                  CSV, then configure delivery and go live.
                 </p>
               </div>
 

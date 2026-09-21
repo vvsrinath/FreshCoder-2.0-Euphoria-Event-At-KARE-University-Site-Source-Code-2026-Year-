@@ -27,6 +27,7 @@ export interface Store {
   events: EventRecord[];
   tests: Test[];
   questions: Question[];
+  testQuestions: {testId: string;questionId: string;position: number;}[];
   questionVersions: {
     id: string;
     questionId: string;
@@ -254,6 +255,7 @@ function buildStore(): Store {
     events: [event],
     tests,
     questions,
+    testQuestions: [],
     questionVersions: [],
     attempts: [],
     answers: [],

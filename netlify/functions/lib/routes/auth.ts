@@ -133,6 +133,23 @@ async function me(ctx: RouteCtx): Promise<HttpResponse> {
   return ok({ user: publicUser({ id: ctx.user.id, role: ctx.user.role, name: ctx.user.name, email: ctx.user.email, active: ctx.user.active }) });
 }
 
+async function changePassword(ctx: RouteCtx): Promise<HttpResponse> {
+  const current = String(ctx.body["currentPassword"] ?? "");
+  const next = String(ctx.body["newPassword"] ?? "");
+  if (next.length < 8) throw new ApiError(400, "New password must be at least 8 characters long.");
+  const row = await queryOne("SELECT password_hash FROM users WHERE id = ?", [ctx.user.id]);
+  if (row === undefined) throw new ApiError(404, "Account not found.");
+  if (!verifyPassword(current, str(row["password_hash"]))) {
+    await securityEvent("PASSWORD_CHANGE_FAILED", ctx.user.id, ctx.user.role, "Wrong current password");
+    throw new ApiError(400, "Your current password is incorrect.");
+  }
+  if (verifyPassword(next, str(row["password_hash"]))) throw new ApiError(400, "New password must be different.");
+  await execute("UPDATE users SET password_hash = ? WHERE id = ?", [hashPassword(next), ctx.user.id]);
+  await securityEvent("PASSWORD_CHANGED", ctx.user.id, ctx.user.role, "Password changed");
+  await audit(ctx.user.id, ctx.user.role, "Changed password", ctx.user.id);
+  return ok({ ok: true });
+}
+
 async function reportEvent(ctx: RouteCtx): Promise<HttpResponse> {
   const eventType = String(ctx.body["type"] ?? "");
   if (!MONITORING_EVENTS.has(eventType)) throw new ApiError(400, "Unknown monitoring signal.");
@@ -178,5 +195,6 @@ export const authRoutes: RouteDef[] = [
   { method: "POST", pattern: /^\/api\/auth\/logout$/, roles: [], handler: logout },
   { method: "GET", pattern: /^\/api\/auth\/me$/, roles: null, handler: me },
   { method: "POST", pattern: /^\/api\/auth\/security-event$/, roles: null, handler: reportEvent },
+  { method: "POST", pattern: /^\/api\/auth\/change-password$/, roles: null, handler: changePassword },
   { method: "POST", pattern: /^\/api\/developer\/init-super-admin$/, roles: null, handler: initSuperAdmin },
 ];

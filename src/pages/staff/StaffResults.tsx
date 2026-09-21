@@ -5,13 +5,14 @@ import { PortalLayout } from '../../components/PortalLayout';
 import { Card } from '../../components/Card';
 import { Button } from '../../components/Button';
 import { DataTable, type Column } from '../../components/DataTable';
+import { Modal } from '../../components/Modal';
 import { SelectField } from '../../components/SelectField';
 import { TextField } from '../../components/TextField';
 import { StatusBadge } from '../../components/StatusBadge';
 import { LoadingState } from '../../components/LoadingState';
 import { ErrorState } from '../../components/ErrorState';
 import { EmptyState } from '../../components/EmptyState';
-import { staffNav } from './staffNav';
+import { StaffNavFooter, staffNav } from './staffNav';
 import { api } from '../../services/api';
 import { downloadCsv, toCsv } from '../../utils/csv';
 import { formatClock, formatDateTime } from '../../utils/format';
@@ -22,6 +23,8 @@ export function StaffResults() {
   const [filters, setFilters] = useState({ testId: '', status: '', search: '' });
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [selected, setSelected] = useState<any>(null);
+  const [detailLoading, setDetailLoading] = useState(false);
 
   const load = useCallback(() => {
     setLoading(true);
@@ -36,6 +39,20 @@ export function StaffResults() {
   }, [filters]);
 
   useEffect(load, [load]);
+
+  const openDetail = async (row: any) => {
+    setSelected(row);
+    setDetailLoading(true);
+    try {
+      const res = await api.result(row.id);
+      setSelected(res.result);
+    } catch (err) {
+      toast.error((err as Error).message);
+      setSelected(null);
+    } finally {
+      setDetailLoading(false);
+    }
+  };
 
   const publish = async (published: boolean) => {
     if (!filters.testId) {
@@ -95,10 +112,14 @@ export function StaffResults() {
     key: 'student',
     header: 'Student',
     render: (row) =>
-    <div>
-          <p className="font-medium text-navy-800">{row.studentName}</p>
+    <button
+      type="button"
+      onClick={() => openDetail(row)}
+      title="View result detail"
+      className="text-left">
+          <p className="font-medium text-navy-800 underline-offset-2 hover:underline">{row.studentName}</p>
           <p className="font-mono text-xs text-slate-500">{row.studentId}</p>
-        </div>
+        </button>
 
   },
   { key: 'test', header: 'Test', render: (row) => row.testName },
@@ -126,13 +147,13 @@ export function StaffResults() {
 
 
   return (
-    <PortalLayout portalLabel="Staff Portal" navItems={staffNav}>
+    <PortalLayout portalLabel="Staff Portal" navItems={staffNav} navFooter={<StaffNavFooter />}>
       <div className="space-y-5">
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div>
-            <h1 className="text-2xl font-bold text-navy-800">Results</h1>
-            <p className="mt-1 text-sm text-slate-600">
-              Scores are calculated and stored by the server at submission time.
+            <h1 className="text-2xl sm:text-3xl font-black text-navy-900 tracking-tight">Results</h1>
+            <p className="mt-1 text-xs sm:text-sm text-slate-500 font-medium">
+              Click a student to view their result. Scores are stored by the server at submission time.
             </p>
           </div>
           <div className="flex gap-2">
@@ -205,6 +226,55 @@ export function StaffResults() {
           }
         </Card>
       </div>
+
+      <Modal
+        open={Boolean(selected)}
+        onClose={() => setSelected(null)}
+        size="md"
+        title="Result detail"
+        description={selected ? `${selected.studentName} · ${selected.testName}` : undefined}
+      >
+        {detailLoading ? (
+          <LoadingState label="Loading result…" />
+        ) : selected ? (
+          <div className="space-y-5">
+            <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+              <DetailStat label="Score" value={`${selected.score}/${selected.maxScore}`} tone="text-blue-600" />
+              <DetailStat label="Percentage" value={`${selected.percentage}%`} tone="text-emerald-600" />
+              <DetailStat label="Correct" value={selected.correct} tone="text-emerald-600" />
+              <DetailStat label="Wrong" value={selected.wrong} tone="text-red-600" />
+            </div>
+            <dl className="grid grid-cols-1 gap-x-6 gap-y-3 sm:grid-cols-2">
+              <DetailRow label="Total questions" value={selected.totalQuestions} />
+              <DetailRow label="Attempted" value={selected.attempted} />
+              <DetailRow label="Unanswered" value={selected.unanswered} />
+              <DetailRow label="Time used" value={formatClock(selected.timeUsedSeconds)} />
+              <DetailRow label="Attempt status" value={<StatusBadge status={selected.attemptStatus} />} />
+              <DetailRow label="Visibility" value={<StatusBadge status={selected.published ? 'PUBLISHED' : 'HIDDEN'} />} />
+              <DetailRow label="Submitted" value={formatDateTime(selected.submittedAt)} />
+              <DetailRow label="Student ID" value={<span className="font-mono">{selected.studentId}</span>} />
+            </dl>
+          </div>
+        ) : null}
+      </Modal>
     </PortalLayout>);
 
+}
+
+function DetailStat({ label, value, tone }: { label: string; value: number | string; tone: string }) {
+  return (
+    <div className="rounded-xl border border-slate-200 p-3 text-center">
+      <p className={`text-xl font-black tabular-nums ${tone}`}>{value}</p>
+      <p className="mt-0.5 text-[11px] font-semibold uppercase tracking-wide text-slate-500">{label}</p>
+    </div>
+  );
+}
+
+function DetailRow({ label, value }: { label: string; value: React.ReactNode }) {
+  return (
+    <div className="flex items-center justify-between border-b border-slate-100 pb-2">
+      <dt className="text-xs font-semibold text-slate-500">{label}</dt>
+      <dd className="text-sm font-bold text-navy-900">{value}</dd>
+    </div>
+  );
 }

@@ -41,15 +41,29 @@ def deadline_expired(attempt) -> bool:
 
 
 def select_question_ids(test) -> list:
-    """The server selects and shuffles the question set — never the browser."""
-    active = query("SELECT id, type FROM questions WHERE status = 'ACTIVE'")
+    """The server selects and shuffles the question set — never the browser.
+
+    Questions live inside each test. When a test owns questions (test_questions),
+    the pool is ONLY that set — never the whole bank. Older tests without a set
+    fall back to the global active pool for backward compatibility.
+    """
+    owned = query("SELECT question_id FROM test_questions WHERE test_id = ?", (test["id"],))
+    owned_ids = [row["question_id"] for row in owned]
+    if owned_ids:
+        placeholders = ",".join("?" * len(owned_ids))
+        active = query(
+            f"SELECT id, type FROM questions WHERE status = 'ACTIVE' AND id IN ({placeholders})",
+            tuple(owned_ids),
+        )
+    else:
+        active = query("SELECT id, type FROM questions WHERE status = 'ACTIVE'")
     mode = test["selection_mode"]
     picked = []
 
     if mode == "MANUAL":
         manual = loads(test["manual_question_ids"], [])
         available = {row["id"] for row in active}
-        picked = [qid for qid in manual if qid in available]
+        picked = [qid for qid in manual if qid in available][: test["question_count"]]
     elif mode == "DISTRIBUTION":
         distribution = loads(test["distribution"], {})
         for qtype, count in distribution.items():
@@ -64,16 +78,17 @@ def select_question_ids(test) -> list:
             filler = [row["id"] for row in active if row["id"] not in picked]
             random.shuffle(filler)
             picked.extend(filler[: test["question_count"] - len(picked)])
+        random.shuffle(picked)
+        picked = picked[: test["question_count"]]
     else:
         pool = [row["id"] for row in active]
-        if test["type"] not in ("MIXED", "QUIZ"):
+        if test["type"] not in ("MIXED", "QUIZ") and not owned_ids:
             typed = [row["id"] for row in active if row["type"] == test["type"]]
             pool = typed or pool
         random.shuffle(pool)
         picked = pool[: test["question_count"]]
 
-    random.shuffle(picked)
-    return picked[: test["question_count"]]
+    return picked
 
 
 def sanitize_question(row) -> dict:
@@ -101,16 +116,33 @@ def freeze_started_questions(attempt) -> None:
     """Snapshot each question exactly as it was when the attempt started.
 
     Grading and display then use the frozen snapshot, so a mid-test answer-key
-    correction never re-grades attempts that were already in flight.
+    correction never re-grades attempts that were already in flight. When the
+    test uses random delivery, MCQ option order is shuffled per attempt and the
+    correct-answer index is remapped so every student sees a different order.
     """
+    test = query_one("SELECT * FROM tests WHERE id = ?", (attempt["test_id"],))
+    shuffle_options = bool(test and test["selection_mode"] == "RANDOM")
     for question_id in loads(attempt["question_ids"], []):
         row = query_one("SELECT * FROM questions WHERE id = ?", (question_id,))
         if row is None:
             continue
+        snapshot = dict(row)
+        if shuffle_options and row["type"] == "MCQ":
+            options = loads(row["options"], []) or []
+            if len(options) > 1:
+                indexed = list(enumerate(options))
+                random.shuffle(indexed)
+                snapshot["options"] = json.dumps([entry[1] for entry in indexed])
+                try:
+                    correct = int(row["answer"])
+                    if 0 <= correct < len(options):
+                        snapshot["answer"] = str(next(i for i, (idx, _) in enumerate(indexed) if idx == correct))
+                except (TypeError, ValueError):
+                    pass
         execute(
             "INSERT OR IGNORE INTO frozen_questions (attempt_id, question_id, version, snapshot)"
             " VALUES (?, ?, ?, ?)",
-            (attempt["id"], question_id, row["version"], json.dumps(dict(row))),
+            (attempt["id"], question_id, row["version"], json.dumps(snapshot)),
         )
 
 

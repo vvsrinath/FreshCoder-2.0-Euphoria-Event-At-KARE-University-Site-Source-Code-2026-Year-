@@ -60,6 +60,27 @@ export const authRoutes: Record<string, Handler> = {
 
   'GET /api/auth/me': (ctx) => ({ user: publicUser(requireUser(ctx)) }),
 
+  'POST /api/auth/change-password': (ctx) => {
+    const user = requireUser(ctx);
+    const { currentPassword, newPassword } = ctx.body ?? {};
+    const current = currentPassword || '';
+    const next = newPassword || '';
+    if (next.length < 8) throw new HttpError(400, 'Password must be at least 8 characters long.');
+    const record = db.users.find((u) => u.id === user.id);
+    if (!record) throw new HttpError(404, 'Account not found.');
+    if (!verifyPassword(current, record.passwordHash)) {
+      security('PASSWORD_CHANGE_FAILED', user.id, user.role, 'Wrong current password');
+      throw new HttpError(400, 'Your current password is incorrect.');
+    }
+    if (verifyPassword(next, record.passwordHash)) {
+      throw new HttpError(400, 'New password must be different.');
+    }
+    record.passwordHash = hashPassword(next);
+    security('PASSWORD_CHANGED', user.id, user.role, 'Password changed');
+    audit(user.id, user.role, 'Changed password', user.id, '');
+    return { ok: true };
+  },
+
   'POST /api/auth/security-event': (ctx) => {
     const user = requireUser(ctx);
     const { type, detail, attemptId } = ctx.body ?? {};

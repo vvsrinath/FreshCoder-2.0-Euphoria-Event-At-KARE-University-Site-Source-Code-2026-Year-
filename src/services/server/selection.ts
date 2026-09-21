@@ -16,10 +16,14 @@ function shuffle<T>(items: T[]): T[] {
  * cannot change what a student is already answering.
  */
 export function selectQuestionsForAttempt(test: Test): string[] {
-  const active = db.questions.filter((q) => q.status === 'ACTIVE');
+  const ownedIds = db.testQuestions.
+  filter((l) => l.testId === test.id).
+  map((l) => l.questionId);
+  const scoped = new Set(ownedIds);
+  const active = db.questions.filter((q) => q.status === 'ACTIVE' && (scoped.size === 0 || scoped.has(q.id)));
 
   if (test.selectionMode === 'MANUAL' && test.manualQuestionIds.length > 0) {
-    return shuffle(test.manualQuestionIds.filter((id) => active.some((q) => q.id === id)));
+    return test.manualQuestionIds.filter((id) => active.some((q) => q.id === id)).slice(0, test.questionCount);
   }
 
   if (test.selectionMode === 'DISTRIBUTION') {
@@ -37,7 +41,7 @@ export function selectQuestionsForAttempt(test: Test): string[] {
   }
 
   const pool =
-  test.type === 'MIXED' || test.type === 'QUIZ' ?
+  scoped.size > 0 || test.type === 'MIXED' || test.type === 'QUIZ' ?
   active :
   active.filter((q) => q.type === test.type as unknown as QuestionType);
   const base = pool.length > 0 ? pool : active;

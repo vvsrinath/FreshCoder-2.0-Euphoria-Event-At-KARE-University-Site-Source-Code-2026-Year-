@@ -372,6 +372,15 @@ async function scheduleTest(ctx: RouteCtx): Promise<HttpResponse> {
 async function startTest(ctx: RouteCtx): Promise<HttpResponse> {
   let row = await queryOne("SELECT * FROM tests WHERE id = ?", [ctx.params[0]]);
   if (row === undefined) throw new ApiError(404, "Test not found.");
+  if (str(row["selection_mode"]) === "RANDOM") {
+    const owned = await queryOne("SELECT COUNT(*) n FROM test_questions WHERE test_id = ?", [ctx.params[0]]);
+    if (owned && num(owned["n"]) > 0 && num(owned["n"]) < num(row["question_count"])) {
+      throw new ApiError(
+        400,
+        `This test has ${num(owned["n"])} questions but requests ${num(row["question_count"])} per student. Add more questions or lower the per-student count.`
+      );
+    }
+  }
   if (str(row["status"]) === "DRAFT") {
     transition(row, "SCHEDULED");
     row = (await queryOne("SELECT * FROM tests WHERE id = ?", [ctx.params[0]])) as Row;
@@ -569,6 +578,7 @@ async function archiveQuestion(ctx: RouteCtx): Promise<HttpResponse> {
   const row = await queryOne("SELECT * FROM questions WHERE id = ?", [ctx.params[0]]);
   if (row === undefined) throw new ApiError(404, "Question not found.");
   await execute("UPDATE questions SET status = 'ARCHIVED' WHERE id = ?", [ctx.params[0]]);
+  await execute("DELETE FROM test_questions WHERE question_id = ?", [ctx.params[0]]);
   await audit(ctx.user.id, ctx.user.role, "Archived question", ctx.params[0], str(row["title"]));
   return ok({ ok: true });
 }
@@ -607,14 +617,223 @@ async function duplicateQuestion(ctx: RouteCtx): Promise<HttpResponse> {
   return ok({ question: questionToJson(fresh as Row) });
 }
 
+// ---------------------------------------------------------------- per-test questions
+async function testQuestions(ctx: RouteCtx): Promise<HttpResponse> {
+  const row = await queryOne("SELECT * FROM tests WHERE id = ?", [ctx.params[0]]);
+  if (row === undefined) throw new ApiError(404, "Test not found.");
+  const rows = await query(
+    "SELECT q.*, tq.position FROM test_questions tq JOIN questions q ON q.id = tq.question_id WHERE tq.test_id = ? ORDER BY tq.position ASC",
+    [ctx.params[0]]
+  );
+  return ok({
+    total: rows.length,
+    totalMarks: rows.reduce((sum, r) => sum + num(r["marks"]), 0),
+    questions: rows.map(questionToJson),
+  });
+}
+
+/** Shared validation/insert with createQuestion — only question content belongs to this test. */
+async function insertQuestionForTest(testId: string, body: Record<string, unknown>, byUser: { id: string; role: string }): Promise<string> {
+  if (!str(body["question"] ?? body["prompt"]).trim() && !str(body["prompt"] ?? "").trim()) {
+    throw new Error("Question text is required.");
+  }
+  const qtype = str(body["type"] || "MCQ");
+  if (!QUESTION_TYPES.has(qtype)) throw new Error(`Unknown question type: ${qtype}`);
+  const difficulty = str(body["difficulty"] || "EASY");
+  if (!DIFFICULTIES.has(difficulty)) throw new Error("Unknown difficulty.");
+  let marks: number;
+  try {
+    marks = safeInt(body["marks"], "Marks", 1, 1, 100);
+  } catch {
+    throw new Error("Marks must be a whole number between 1 and 100.");
+  }
+  const qid = `Q${crypto16(6)}`;
+  await execute(
+    "INSERT INTO questions (id, version, title, type, topic, difficulty, marks, status, prompt, code, options, answer, alternatives, explanation, input_format, output_format, constraints, sample_input, sample_output, test_cases, created_by, created_at) VALUES (?,1,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)",
+    [
+      qid,
+      str(body["title"] ?? String(body["prompt"] ?? body["question"] ?? "").slice(0, 80)).slice(0, 500),
+      qtype,
+      str(body["topic"] || "General").slice(0, 100),
+      difficulty,
+      marks,
+      "ACTIVE",
+      String(body["question"] ?? body["prompt"] ?? ""),
+      body["code"] === undefined || body["code"] === null || body["code"] === "" ? null : body["code"],
+      body["options"] && Array.isArray(body["options"]) ? JSON.stringify(body["options"]) : null,
+      str(body["answer"] ?? body["correctAnswer"] ?? ""),
+      JSON.stringify(Array.isArray(body["alternatives"]) ? body["alternatives"] : []),
+      body["explanation"] === undefined || body["explanation"] === null || body["explanation"] === "" ? null : body["explanation"],
+      body["inputFormat"] === undefined ? null : body["inputFormat"],
+      body["outputFormat"] === undefined ? null : body["outputFormat"],
+      body["constraints"] === undefined ? null : body["constraints"],
+      body["sampleInput"] === undefined ? null : body["sampleInput"],
+      body["sampleOutput"] === undefined ? null : body["sampleOutput"],
+      JSON.stringify(Array.isArray(body["testCases"]) ? body["testCases"] : []),
+      byUser.id,
+      utcNow(),
+    ]
+  );
+  const position = num((await queryOne("SELECT COALESCE(MAX(position), 0) n FROM test_questions WHERE test_id = ?", [testId]))?.["n"]) + 1;
+  await execute("INSERT INTO test_questions (test_id, question_id, position) VALUES (?, ?, ?)", [testId, qid, position]);
+  await audit(byUser.id, byUser.role, "Created question", qid, String(body["prompt"] ?? body["question"] ?? ""));
+  return qid;
+}
+
+async function addTestQuestion(ctx: RouteCtx): Promise<HttpResponse> {
+  const row = await queryOne("SELECT * FROM tests WHERE id = ?", [ctx.params[0]]);
+  if (row === undefined) throw new ApiError(404, "Test not found.");
+  if (!["DRAFT", "SCHEDULED"].includes(str(row["status"]))) {
+    throw new ApiError(409, "Questions can only be added while the test is not live.");
+  }
+  try {
+    const qid = await insertQuestionForTest(ctx.params[0], ctx.body, ctx.user);
+    const fresh = await queryOne("SELECT * FROM questions WHERE id = ?", [qid]);
+    return ok({ question: questionToJson(fresh as Row) });
+  } catch (error) {
+    throw new ApiError(400, error instanceof Error ? error.message : String(error));
+  }
+}
+
+interface ImporterFields {
+  question?: string;
+  prompt?: string;
+  title?: string;
+  type?: string;
+  marks?: string | number;
+  topic?: string;
+  difficulty?: string;
+  option_a?: string;
+  option_b?: string;
+  option_c?: string;
+  option_d?: string;
+  correct_answer?: string;
+  correctAnswer?: string;
+  answer?: string;
+  keywords?: string;
+  expected_output?: string;
+  explanation?: string;
+  [key: string]: string | number | undefined;
+}
+
+function csvType(raw: string): string {
+  const map: Record<string, string> = {
+    MCQ: "MCQ",
+    TRUE_FALSE: "TRUE_FALSE",
+    FILL_BLANK: "FILL_BLANK",
+    OUTPUT_PREDICTION: "OUTPUT",
+    OUTPUT: "OUTPUT",
+    CODE_COMPLETION: "CODE_COMPLETION",
+    DEBUGGING: "DEBUGGING",
+    CODING: "CODING",
+    SHORT_ANSWER: "FILL_BLANK",
+  };
+  return map[(raw || "").trim().toUpperCase()] ?? "";
+}
+
+function normalizeCsvRow(raw: Record<string, unknown>, line: number): Record<string, unknown> {
+  const r = raw as unknown as ImporterFields;
+  const question = str(r.question ?? r.prompt ?? "").trim();
+  if (!question) throw new Error(`Row ${line}: "question" is required.`);
+  const qtype = csvType(str(r.type ?? ""));
+  if (!qtype) throw new Error(`Row ${line}: unknown question type "${str(r.type ?? "")}".`);
+  const marks = Number(r.marks ?? 1);
+  if (!Number.isFinite(marks) || marks < 1) throw new Error(`Row ${line}: "marks" must be a whole number.`);
+  const difficulty = ["EASY", "MEDIUM", "HARD"].includes(str(r.difficulty ?? "").toUpperCase())
+    ? str(r.difficulty ?? "").toUpperCase()
+    : "EASY";
+  const options = [r.option_a, r.option_b, r.option_c, r.option_d].filter((o) => str(o ?? "").trim() !== "").map((o) => str(o));
+  const keywords = str(r.keywords ?? "").split(",").map((k) => k.trim()).filter(Boolean);
+  const expected = str(r.expected_output ?? r.answer ?? r.correctAnswer ?? "").trim();
+
+  let answer = "";
+  if (qtype === "MCQ") {
+    if (options.length < 2) throw new Error(`Row ${line}: MCQ questions need at least two options.`);
+    const correct = str(r.correct_answer ?? r.correctAnswer ?? "").trim();
+    if (/^[A-D]$/i.test(correct)) answer = String((correct.toUpperCase().charCodeAt(0) - 65) % 4).slice(0, 1);
+    else if (correct !== "") {
+      const idx = options.findIndex((o) => o.toLowerCase() === correct.toLowerCase());
+      answer = idx >= 0 ? String(idx) : correct;
+    } else throw new Error(`Row ${line}: MCQ questions need a correct answer (A–D or the option text).`);
+  } else if (qtype === "TRUE_FALSE") {
+    answer = ["true", "t", "yes", "1"].includes(str(r.correct_answer ?? r.correctAnswer ?? "").trim().toLowerCase())
+      ? "true"
+      : "false";
+  } else {
+    answer = expected || str(r.correct_answer ?? r.correctAnswer ?? "");
+    if (!answer) throw new Error(`Row ${line}: a correct answer is required for ${qtype} questions.`);
+  }
+
+  return {
+    question,
+    title: str(r.title ?? "").trim() || question.slice(0, 80),
+    type: qtype,
+    marks,
+    topic: str(r.topic ?? "").trim() || "General",
+    difficulty,
+    options: options.length ? options : undefined,
+    answer,
+    alternatives: keywords,
+    explanation: str(r.explanation ?? "").trim() || undefined,
+  };
+}
+
+async function importTestQuestions(ctx: RouteCtx): Promise<HttpResponse> {
+  const row = await queryOne("SELECT * FROM tests WHERE id = ?", [ctx.params[0]]);
+  if (row === undefined) throw new ApiError(404, "Test not found.");
+  if (!["DRAFT", "SCHEDULED"].includes(str(row["status"]))) {
+    throw new ApiError(409, "Questions can only be added while the test is not live.");
+  }
+  const rows = Array.isArray(ctx.body["rows"]) ? ctx.body["rows"] : [];
+  if (rows.length === 0) throw new ApiError(400, "No questions to import.");
+  const imported: string[] = [];
+  const errors: { line: number; message: string }[] = [];
+  for (let i = 0; i < rows.length; i += 1) {
+    try {
+      const normalized = normalizeCsvRow((rows[i] as Record<string, unknown>) ?? {}, i + 1);
+      imported.push(await insertQuestionForTest(ctx.params[0], normalized, ctx.user));
+    } catch (error) {
+      errors.push({ line: i + 1, message: error instanceof Error ? error.message : String(error) });
+    }
+  }
+  await audit(ctx.user.id, ctx.user.role, "Imported questions", str(row["name"]), `${imported.length} imported, ${errors.length} errors`);
+  const fresh = await query("SELECT q.*, tq.position FROM test_questions tq JOIN questions q ON q.id = tq.question_id WHERE tq.test_id = ? ORDER BY tq.position", [ctx.params[0]]);
+  return ok({
+    imported: imported.length,
+    errors,
+    total: fresh.length,
+    totalMarks: fresh.reduce((sum, q) => sum + num(q["marks"]), 0),
+    questions: fresh.map(questionToJson),
+  });
+}
+
+async function reorderTestQuestions(ctx: RouteCtx): Promise<HttpResponse> {
+  const orderedIds = ctx.body["orderedIds"];
+  if (!Array.isArray(orderedIds)) throw new ApiError(400, "An orderedIds array is required.");
+  const testId = ctx.params[0];
+  const owned = await query("SELECT question_id FROM test_questions WHERE test_id = ?", [testId]);
+  const ownedSet = new Set(owned.map((r) => str(r["question_id"])));
+  for (const qid of orderedIds) {
+    if (!ownedSet.has(String(qid))) throw new ApiError(400, `Question ${qid} does not belong to this test.`);
+  }
+  for (let i = 0; i < orderedIds.length; i += 1) {
+    await execute("UPDATE test_questions SET position = ? WHERE test_id = ? AND question_id = ?", [i + 1, testId, String(orderedIds[i])]);
+  }
+  await audit(ctx.user.id, ctx.user.role, "Reordered questions", testId);
+  return ok({ ok: true });
+}
+
 // ---------------------------------------------------------------- monitoring
-async function live(_ctx: RouteCtx): Promise<HttpResponse> {
-  const attempts = await query("SELECT * FROM attempts");
+async function live(ctx: RouteCtx): Promise<HttpResponse> {
+  const testId = ctx.query["testId"];
+  const attempts = testId
+    ? await query("SELECT * FROM attempts WHERE test_id = ?", [testId])
+    : await query("SELECT * FROM attempts");
   const rows: Record<string, unknown>[] = [];
   for (const attempt of attempts) {
     const answers = await query("SELECT * FROM answers WHERE attempt_id = ?", [attempt["id"]]);
     const student = await queryOne("SELECT name FROM users WHERE id = ?", [attempt["student_id"]]);
-    const test = await queryOne("SELECT name FROM tests WHERE id = ?", [attempt["test_id"]]);
+    const test = await queryOne("SELECT name, status FROM tests WHERE id = ?", [attempt["test_id"]]);
     const events = await queryOne("SELECT COUNT(*) n FROM security_events WHERE attempt_id = ?", [attempt["id"]]);
     rows.push({
       attemptId: attempt["id"],
@@ -632,15 +851,42 @@ async function live(_ctx: RouteCtx): Promise<HttpResponse> {
     });
   }
   const finalStatuses = ["SUBMITTED", "FORCE_SUBMITTED", "TIME_EXPIRED"];
+  const test = testId ? await queryOne("SELECT * FROM tests WHERE id = ?", [testId]) : undefined;
   return ok({
+    test: test ? testToJson(test) : null,
     rows,
     stats: {
-      total: num((await queryOne("SELECT COUNT(*) n FROM users WHERE role='STUDENT'"))?.["n"]),
+      total: num(
+        (await queryOne("SELECT COUNT(*) n FROM users WHERE role='STUDENT'"))?.["n"]
+      ),
       active: rows.filter((r) => r["status"] === "IN_PROGRESS").length,
       submitted: rows.filter((r) => finalStatuses.includes(str(r["status"]))).length,
       locked: rows.filter((r) => r["status"] === "LOCKED").length,
       disconnected: rows.filter((r) => r["status"] === "DISCONNECTED").length,
-      securityEvents: num((await queryOne("SELECT COUNT(*) n FROM security_events"))?.["n"]),
+      securityEvents: num(
+        (await queryOne(
+          testId
+            ? "SELECT COUNT(*) n FROM security_events WHERE test_id = ?"
+            : "SELECT COUNT(*) n FROM security_events",
+          testId ? [testId] : []
+        ))?.["n"]
+      ),
+      pendingEdit: num(
+        (await queryOne(
+          testId
+            ? "SELECT COUNT(*) n FROM edit_requests WHERE status='PENDING' AND test_id = ?"
+            : "SELECT COUNT(*) n FROM edit_requests WHERE status='PENDING'",
+          testId ? [testId] : []
+        ))?.["n"]
+      ),
+      activeTests: num(
+        (await queryOne(
+          testId
+            ? "SELECT COUNT(*) n FROM tests WHERE status='ACTIVE' AND id = ?"
+            : "SELECT COUNT(*) n FROM tests WHERE status='ACTIVE'",
+          testId ? [testId] : []
+        ))?.["n"]
+      ),
     },
     serverTime: utcNow(),
   });
@@ -681,6 +927,41 @@ async function forceSubmitStudent(ctx: RouteCtx): Promise<HttpResponse> {
   const result = await finalizeAttempt(attempt, stored, "FORCE_SUBMITTED");
   await audit(ctx.user.id, ctx.user.role, "Force submitted student", ctx.params[0], `score ${result["score"]}/${result["maxScore"]}`);
   return ok({ ok: true, result });
+}
+
+// ---------------------------------------------------------------- students (read-only roster)
+async function staffStudents(ctx: RouteCtx): Promise<HttpResponse> {
+  let sql = "SELECT * FROM users WHERE role = 'STUDENT'";
+  const params: unknown[] = [];
+  if (ctx.query["search"]) {
+    sql += " AND (LOWER(id) LIKE ? OR LOWER(name) LIKE ?)";
+    const term = `%${ctx.query["search"].toLowerCase()}%`;
+    params.push(term, term);
+  }
+  const rows = await query(sql + " ORDER BY id", params);
+  const students: Record<string, unknown>[] = [];
+  for (const r of rows) {
+    const latest = await queryOne(
+      "SELECT a.*, t.name AS test_name FROM attempts a JOIN tests t ON t.id = a.test_id WHERE a.student_id = ? ORDER BY COALESCE(a.started_at, a.last_activity) DESC LIMIT 1",
+      [r["id"]]
+    );
+    const taken = num((await queryOne("SELECT COUNT(DISTINCT test_id) n FROM attempts WHERE student_id = ?", [r["id"]]))?.["n"]);
+    students.push({
+      id: r["id"],
+      name: r["name"],
+      email: r["email"],
+      active: bool(r["active"]),
+      takenTests: taken,
+      currentStatus: latest ? str(latest["status"]) : "NOT_STARTED",
+      currentTest: latest ? str(latest["test_name"]) : null,
+      lastActivity: latest ? latest["last_activity"] : null,
+    });
+  }
+  return ok({
+    total: students.length,
+    activeCount: students.filter((s) => bool(s["active"])).length,
+    students,
+  });
 }
 
 // ---------------------------------------------------------------- edit requests
@@ -917,6 +1198,10 @@ export const staffRoutes: RouteDef[] = [
   { method: "GET", pattern: /^\/api\/staff\/tests$/, roles: STAFF, handler: listTests },
   { method: "POST", pattern: /^\/api\/staff\/tests$/, roles: STAFF, handler: createTest },
   { method: "GET", pattern: /^\/api\/staff\/tests\/([^/]+)\/timing-changes$/, roles: STAFF, handler: testTimingChanges },
+  { method: "GET", pattern: /^\/api\/staff\/tests\/([^/]+)\/questions$/, roles: STAFF, handler: testQuestions },
+  { method: "POST", pattern: /^\/api\/staff\/tests\/([^/]+)\/questions\/import$/, roles: STAFF, handler: importTestQuestions },
+  { method: "POST", pattern: /^\/api\/staff\/tests\/([^/]+)\/questions$/, roles: STAFF, handler: addTestQuestion },
+  { method: "PUT", pattern: /^\/api\/staff\/tests\/([^/]+)\/questions$/, roles: STAFF, handler: reorderTestQuestions },
   { method: "POST", pattern: /^\/api\/staff\/tests\/([^/]+)\/duplicate$/, roles: STAFF, handler: duplicateTest },
   { method: "POST", pattern: /^\/api\/staff\/tests\/([^/]+)\/schedule$/, roles: STAFF, handler: scheduleTest },
   { method: "POST", pattern: /^\/api\/staff\/tests\/([^/]+)\/start$/, roles: STAFF, handler: startTest },
@@ -934,6 +1219,7 @@ export const staffRoutes: RouteDef[] = [
   { method: "DELETE", pattern: /^\/api\/questions\/([^/]+)$/, roles: STAFF, handler: archiveQuestion },
 
   { method: "GET", pattern: /^\/api\/staff\/live$/, roles: STAFF, handler: live },
+  { method: "GET", pattern: /^\/api\/staff\/students$/, roles: STAFF, handler: staffStudents },
   { method: "POST", pattern: /^\/api\/staff\/students\/([^/]+)\/lock$/, roles: STAFF, handler: lockStudent },
   { method: "POST", pattern: /^\/api\/staff\/students\/([^/]+)\/unlock$/, roles: STAFF, handler: unlockStudent },
   { method: "POST", pattern: /^\/api\/staff\/students\/([^/]+)\/force-submit$/, roles: STAFF, handler: forceSubmitStudent },

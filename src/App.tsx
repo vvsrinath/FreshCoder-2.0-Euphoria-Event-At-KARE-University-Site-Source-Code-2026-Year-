@@ -1,5 +1,5 @@
 import React from 'react';
-import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom';
+import { BrowserRouter, Navigate, Route, Routes, useParams } from 'react-router-dom';
 import { Toaster } from 'sonner';
 import { AuthProvider } from './contexts/AuthContext';
 import { ProtectedRoute } from './components/ProtectedRoute';
@@ -18,8 +18,9 @@ import { Exam } from './pages/student/Exam';
 import { StaffDashboard } from './pages/staff/StaffDashboard';
 import { TestManagement } from './pages/staff/TestManagement';
 import { TestBuilder } from './pages/staff/TestBuilder';
-import { QuestionBank } from './pages/staff/QuestionBank';
-import { LiveMonitoring } from './pages/staff/LiveMonitoring';
+import { TestWorkspace } from './pages/staff/TestWorkspace';
+import { StaffStudents } from './pages/staff/StaffStudents';
+import { StaffProfile } from './pages/staff/StaffProfile';
 import { EditRequests } from './pages/staff/EditRequests';
 import { StaffResults } from './pages/staff/StaffResults';
 import { SecurityEvents } from './pages/staff/SecurityEvents';
@@ -28,6 +29,11 @@ import { AdminDashboard } from './pages/admin/AdminDashboard';
 import { StudentManagement } from './pages/admin/StudentManagement';
 import { StaffManagement } from './pages/admin/StaffManagement';
 import { EventManagement } from './pages/admin/EventManagement';
+
+function TestEditRedirect() {
+  const { id } = useParams();
+  return <Navigate to={`/staff/tests/${id ?? ''}`} replace />;
+}
 
 export function App() {
   return (
@@ -129,28 +135,40 @@ export function App() {
             } />
           
           <Route
-            path="/staff/tests/:id/edit"
+            path="/staff/tests/:id"
             element={
             <ProtectedRoute roles={['STAFF', 'SUPER_ADMIN']}>
-                <TestBuilder />
+                <TestWorkspace />
+              </ProtectedRoute>
+            } />
+          
+          <Route
+            path="/staff/tests/:id/edit"
+            element={<TestEditRedirect />} />
+          
+          <Route
+            path="/staff/students"
+            element={
+            <ProtectedRoute roles={['STAFF', 'SUPER_ADMIN']}>
+                <StaffStudents />
+              </ProtectedRoute>
+            } />
+          
+          <Route
+            path="/staff/profile"
+            element={
+            <ProtectedRoute roles={['STAFF', 'SUPER_ADMIN']}>
+                <StaffProfile />
               </ProtectedRoute>
             } />
           
           <Route
             path="/staff/questions"
-            element={
-            <ProtectedRoute roles={['STAFF', 'SUPER_ADMIN']}>
-                <QuestionBank />
-              </ProtectedRoute>
-            } />
+            element={<Navigate to="/staff/tests" replace />} />
           
           <Route
             path="/staff/live"
-            element={
-            <ProtectedRoute roles={['STAFF', 'SUPER_ADMIN']}>
-                <LiveMonitoring />
-              </ProtectedRoute>
-            } />
+            element={<Navigate to="/staff/tests" replace />} />
           
           <Route
             path="/staff/edit-requests"

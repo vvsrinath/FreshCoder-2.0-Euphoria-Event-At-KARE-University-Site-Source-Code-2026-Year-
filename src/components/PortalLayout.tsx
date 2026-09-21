@@ -4,6 +4,7 @@ import { ChevronDownIcon, LogOutIcon, MenuIcon, XIcon, UserIcon } from 'lucide-r
 import { toast } from 'sonner';
 import { BrandMark } from './BrandMark';
 import { GlobalFooter } from './GlobalFooter';
+import { ConfirmDialog } from './ConfirmDialog';
 import { useAuth } from '../contexts/AuthContext';
 import { api } from '../services/api';
 import { cn } from '../utils/cn';
@@ -20,14 +21,18 @@ interface PortalLayoutProps {
   navItems: NavItem[];
   children: React.ReactNode;
   headerRight?: React.ReactNode;
+  navFooter?: React.ReactNode;
 }
 
-export function PortalLayout({ portalLabel, navItems, children, headerRight }: PortalLayoutProps) {
+export function PortalLayout({ portalLabel, navItems, children, headerRight, navFooter }: PortalLayoutProps) {
   const { user, logout } = useAuth();
   const navigate = useNavigate();
   const [open, setOpen] = useState(false);
+  const [confirmLogout, setConfirmLogout] = useState(false);
+  const [loggingOut, setLoggingOut] = useState(false);
 
   const handleLogout = async () => {
+    setLoggingOut(true);
     await logout();
     navigate('/login');
   };
@@ -160,16 +165,18 @@ export function PortalLayout({ portalLabel, navItems, children, headerRight }: P
           </ul>
         </nav>
 
-        {/* Sidebar Logout Button */}
+        {/* Sidebar Footer: profile/logout (portal-provided) or default logout */}
         <div className="border-t border-white/10 p-4">
-          <button
-            type="button"
-            onClick={handleLogout}
-            className="flex w-full items-center gap-3 rounded-xl px-4 py-2.5 text-sm font-semibold text-slate-400 transition-all hover:bg-white/10 hover:text-white"
-          >
-            <LogOutIcon className="h-4 w-4" />
-            Logout
-          </button>
+          {navFooter ?? (
+            <button
+              type="button"
+              onClick={() => setConfirmLogout(true)}
+              className="flex w-full items-center gap-3 rounded-xl px-4 py-2.5 text-sm font-semibold text-slate-400 transition-all hover:bg-white/10 hover:text-white"
+            >
+              <LogOutIcon className="h-4 w-4" />
+              Logout
+            </button>
+          )}
         </div>
       </aside>
 
@@ -229,6 +236,17 @@ export function PortalLayout({ portalLabel, navItems, children, headerRight }: P
         {/* Persistent Bottom Footer */}
         <GlobalFooter />
       </div>
+
+      <ConfirmDialog
+        open={confirmLogout}
+        title="Sign out?"
+        message="You will need your ID and password to sign back in."
+        confirmLabel="Sign out"
+        destructive
+        loading={loggingOut}
+        onConfirm={handleLogout}
+        onCancel={() => setConfirmLogout(false)}
+      />
     </div>
   );
 }

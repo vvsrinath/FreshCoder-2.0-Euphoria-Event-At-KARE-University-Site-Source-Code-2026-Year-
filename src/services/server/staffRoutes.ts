@@ -336,6 +336,9 @@ export const staffRoutes: Record<string, Handler> = {
     const question = db.questions.find((q) => q.id === ctx.params.id);
     if (!question) throw new HttpError(404, 'Question not found.');
     question.status = 'ARCHIVED';
+    for (let i = db.testQuestions.length - 1; i >= 0; i -= 1) {
+      if (db.testQuestions[i].questionId === question.id) db.testQuestions.splice(i, 1);
+    }
     audit(user.id, user.role, 'Archived question', question.id, question.title);
     return { question };
   },
@@ -358,10 +361,199 @@ export const staffRoutes: Record<string, Handler> = {
     return { question: copy };
   },
 
+  // ---------------- QUESTIONS INSIDE A TEST ----------------
+  'GET /api/staff/tests/:id/questions': (ctx) => {
+    requireRole(ctx, 'STAFF', 'SUPER_ADMIN');
+    getTest(ctx.params.id);
+    const links = db.testQuestions.
+    filter((l) => l.testId === ctx.params.id).
+    sort((a, b) => a.position - b.position);
+    const questions = links.
+    map((l) => db.questions.find((q) => q.id === l.questionId)).
+    filter((q): q is Question => Boolean(q));
+    return { questions, total: questions.length, totalMarks: questions.reduce((s, q) => s + (q.marks ?? 0), 0) };
+  },
+
+  'POST /api/staff/tests/:id/questions': (ctx) => {
+    const user = requireRole(ctx, 'STAFF', 'SUPER_ADMIN');
+    const test = getTest(ctx.params.id);
+    if (!['DRAFT', 'SCHEDULED'].includes(test.status)) {
+      throw new HttpError(409, 'Questions can only be added while the test is not live.');
+    }
+    const body = ctx.body ?? {};
+    const prompt = String(body.question ?? body.prompt ?? '');
+    if (!prompt.trim()) throw new HttpError(400, 'Question text is required.');
+    const qtype = String(body.type ?? 'MCQ');
+    if (!['MCQ', 'TRUE_FALSE', 'FILL_BLANK', 'OUTPUT', 'CODE_COMPLETION', 'DEBUGGING', 'CODING'].includes(qtype)) {
+      throw new HttpError(400, `Unknown question type: ${qtype}`);
+    }
+    const marks = Number(body.marks ?? 1);
+    if (!Number.isFinite(marks) || marks < 1 || marks > 100) {
+      throw new HttpError(400, 'Marks must be a whole number between 1 and 100.');
+    }
+    const question: Question = {
+      id: `Q${String(db.questions.length + 1).padStart(3, '0')}${uid('').slice(-2)}`,
+      version: 1,
+      title: String(body.title ?? '').trim() || prompt.slice(0, 80),
+      type: qtype,
+      topic: String(body.topic ?? 'General'),
+      difficulty: String(body.difficulty ?? 'EASY'),
+      marks,
+      status: 'ACTIVE',
+      prompt,
+      code: body.code ?? null,
+      options: Array.isArray(body.options) ? body.options : undefined,
+      answer: String(body.answer ?? body.correctAnswer ?? ''),
+      alternatives: Array.isArray(body.alternatives) ? body.alternatives : undefined,
+      explanation: body.explanation ?? undefined,
+      inputFormat: body.inputFormat,
+      outputFormat: body.outputFormat,
+      constraints: body.constraints,
+      sampleInput: body.sampleInput,
+      sampleOutput: body.sampleOutput,
+      testCases: body.testCases,
+      createdBy: user.id,
+      createdAt: now()
+    };
+    db.questions.unshift(question);
+    const next = Math.max(0, ...db.testQuestions.filter((l) => l.testId === test.id).map((l) => l.position)) + 1;
+    db.testQuestions.push({ testId: test.id, questionId: question.id, position: next });
+    audit(user.id, user.role, 'Created question', question.id, question.title);
+    return { question };
+  },
+
+  'POST /api/staff/tests/:id/questions/import': (ctx) => {
+    const user = requireRole(ctx, 'STAFF', 'SUPER_ADMIN');
+    const test = getTest(ctx.params.id);
+    if (!['DRAFT', 'SCHEDULED'].includes(test.status)) {
+      throw new HttpError(409, 'Questions can only be added while the test is not live.');
+    }
+    const rows = Array.isArray(ctx.body?.rows) ? ctx.body.rows : [];
+    if (rows.length === 0) throw new HttpError(400, 'No questions to import.');
+    const typeMap: Record<string, string> = {
+      MCQ: 'MCQ',
+      TRUE_FALSE: 'TRUE_FALSE',
+      FILL_BLANK: 'FILL_BLANK',
+      OUTPUT_PREDICTION: 'OUTPUT',
+      OUTPUT: 'OUTPUT',
+      CODE_COMPLETION: 'CODE_COMPLETION',
+      DEBUGGING: 'DEBUGGING',
+      CODING: 'CODING',
+      SHORT_ANSWER: 'FILL_BLANK'
+    };
+    const imported: string[] = [];
+    const errors: { line: number; message: string }[] = [];
+    rows.forEach((raw: Record<string, unknown>, index: number) => {
+      const line = index + 1;
+      try {
+        const r = raw ?? {};
+        const prompt = String(r.question ?? r.prompt ?? '').trim();
+        if (!prompt) throw new Error(`Row ${line}: "question" is required.`);
+        const qtype = typeMap[String(r.type ?? '').trim().toUpperCase()];
+        if (!qtype) throw new Error(`Row ${line}: unknown question type "${String(r.type ?? '')}".`);
+        const marks = Number(r.marks ?? 1);
+        if (!Number.isFinite(marks) || marks < 1) throw new Error(`Row ${line}: "marks" must be a whole number.`);
+        const difficulty = ['EASY', 'MEDIUM', 'HARD'].includes(String(r.difficulty ?? '').toUpperCase())
+          ? String(r.difficulty).toUpperCase()
+          : 'EASY';
+        const options = [r.option_a, r.option_b, r.option_c, r.option_d].
+        filter((o) => String(o ?? '').trim() !== '').
+        map((o) => String(o));
+        const keywords = String(r.keywords ?? '').split(',').map((k) => k.trim()).filter(Boolean);
+        const expected = String(r.expected_output ?? r.answer ?? r.correctAnswer ?? '').trim();
+        let answer = '';
+        if (qtype === 'MCQ') {
+          if (options.length < 2) throw new Error(`Row ${line}: MCQ questions need at least two options.`);
+          const correct = String(r.correct_answer ?? r.correctAnswer ?? '').trim();
+          if (/^[A-D]$/i.test(correct)) answer = String((correct.toUpperCase().charCodeAt(0) - 65) % 4);
+          else if (correct) {
+            const idx = options.findIndex((o) => o.toLowerCase() === correct.toLowerCase());
+            answer = idx >= 0 ? String(idx) : correct;
+          } else throw new Error(`Row ${line}: MCQ questions need a correct answer (A–D or the option text).`);
+        } else if (qtype === 'TRUE_FALSE') {
+          answer = ['true', 't', 'yes', '1'].includes(String(r.correct_answer ?? r.correctAnswer ?? '').trim().toLowerCase())
+            ? 'true'
+            : 'false';
+        } else {
+          answer = expected || String(r.correct_answer ?? r.correctAnswer ?? '');
+          if (!answer) throw new Error(`Row ${line}: a correct answer is required for ${qtype} questions.`);
+        }
+        const body = {
+          question: prompt,
+          title: String(r.title ?? '').trim() || prompt.slice(0, 80),
+          type: qtype,
+          marks,
+          topic: String(r.topic ?? '').trim() || 'General',
+          difficulty,
+          options: options.length ? options : undefined,
+          answer,
+          alternatives: keywords,
+          explanation: String(r.explanation ?? '').trim() || undefined
+        };
+        const question: Question = {
+          id: `Q${String(db.questions.length + 1).padStart(3, '0')}${uid('').slice(-2)}`,
+          version: 1,
+          title: body.title,
+          type: body.type as Question['type'],
+          topic: body.topic,
+          difficulty: body.difficulty as Question['difficulty'],
+          marks,
+          status: 'ACTIVE',
+          prompt,
+          code: null,
+          options: body.options ?? undefined,
+          answer,
+          alternatives: body.alternatives,
+          explanation: body.explanation,
+          createdBy: user.id,
+          createdAt: now()
+        };
+        db.questions.unshift(question);
+        const next = Math.max(0, ...db.testQuestions.filter((l) => l.testId === test.id).map((l) => l.position)) + 1;
+        db.testQuestions.push({ testId: test.id, questionId: question.id, position: next });
+        imported.push(question.id);
+      } catch (error) {
+        errors.push({ line, message: error instanceof Error ? error.message : String(error) });
+      }
+    });
+    audit(user.id, user.role, 'Imported questions', test.name, `${imported.length} imported, ${errors.length} errors`);
+    const links = db.testQuestions.
+    filter((l) => l.testId === test.id).
+    sort((a, b) => a.position - b.position);
+    const questions = links.
+    map((l) => db.questions.find((q) => q.id === l.questionId)).
+    filter((q): q is Question => Boolean(q));
+    return {
+      imported: imported.length,
+      errors,
+      total: questions.length,
+      totalMarks: questions.reduce((s, q) => s + (q.marks ?? 0), 0),
+      questions
+    };
+  },
+
+  'PUT /api/staff/tests/:id/questions': (ctx) => {
+    const user = requireRole(ctx, 'STAFF', 'SUPER_ADMIN');
+    const orderedIds = ctx.body?.orderedIds;
+    if (!Array.isArray(orderedIds)) throw new HttpError(400, 'An orderedIds array is required.');
+    const owned = new Set(db.testQuestions.filter((l) => l.testId === ctx.params.id).map((l) => l.questionId));
+    for (const qid of orderedIds) {
+      if (!owned.has(String(qid))) throw new HttpError(400, `Question ${qid} does not belong to this test.`);
+    }
+    orderedIds.forEach((qid, i) => {
+      const link = db.testQuestions.find((l) => l.testId === ctx.params.id && l.questionId === String(qid));
+      if (link) link.position = i + 1;
+    });
+    audit(user.id, user.role, 'Reordered questions', ctx.params.id, '');
+    return { ok: true };
+  },
+
   // ---------------- LIVE MONITORING ----------------
   'GET /api/staff/live': (ctx) => {
     requireRole(ctx, 'STAFF', 'SUPER_ADMIN');
-    const rows = db.attempts.map((attempt) => {
+    const testId = ctx.query.testId;
+    const attempts = testId ? db.attempts.filter((a) => a.testId === testId) : db.attempts;
+    const rows = attempts.map((attempt) => {
       const answers = db.answers.filter((a) => a.attemptId === attempt.id);
       return {
         attemptId: attempt.id,
@@ -378,8 +570,10 @@ export const staffRoutes: Record<string, Handler> = {
         securityEvents: db.securityEvents.filter((e) => e.attemptId === attempt.id).length
       };
     });
+    const testObj = testId ? db.tests.find((t) => t.id === testId) ?? null : null;
     return {
       rows,
+      test: testObj,
       stats: {
         total: db.users.filter((u) => u.role === 'STUDENT').length,
         active: rows.filter((r) => r.status === 'IN_PROGRESS').length,
@@ -388,9 +582,49 @@ export const staffRoutes: Record<string, Handler> = {
         ).length,
         locked: rows.filter((r) => r.status === 'LOCKED').length,
         disconnected: rows.filter((r) => r.status === 'DISCONNECTED').length,
-        securityEvents: db.securityEvents.length
+        securityEvents: testId
+          ? db.securityEvents.filter((e) => e.testId === testId).length
+          : db.securityEvents.length,
+        pendingEdit: testId
+          ? db.editRequests.filter((r) => r.status === 'PENDING' && r.testId === testId).length
+          : db.editRequests.filter((r) => r.status === 'PENDING').length,
+        activeTests: testId
+          ? (testObj?.status === 'ACTIVE' ? 1 : 0)
+          : db.tests.filter((t) => t.status === 'ACTIVE').length
       },
       serverTime: now()
+    };
+  },
+
+  // ---------------- STUDENT ROSTER ----------------
+  'GET /api/staff/students': (ctx) => {
+    requireRole(ctx, 'STAFF', 'SUPER_ADMIN');
+    let students = db.users.filter((u) => u.role === 'STUDENT');
+    const search = ctx.query.search;
+    if (search) {
+      const s = search.toLowerCase();
+      students = students.filter((u) => u.id.toLowerCase().includes(s) || u.name.toLowerCase().includes(s));
+    }
+    const rows = students.map((u) => {
+      const latest = [...db.attempts].
+      filter((a) => a.studentId === u.id).
+      sort((a, b) => String(a.lastActivity).localeCompare(String(b.lastActivity))).
+      reverse()[0];
+      return {
+        id: u.id,
+        name: u.name,
+        email: u.email,
+        active: u.active,
+        takenTests: new Set(db.attempts.filter((a) => a.studentId === u.id).map((a) => a.testId)).size,
+        currentStatus: latest?.status ?? 'NOT_STARTED',
+        currentTest: latest ? db.tests.find((t) => t.id === latest.testId)?.name ?? latest.testId : null,
+        lastActivity: latest?.lastActivity ?? null
+      };
+    });
+    return {
+      total: rows.length,
+      activeCount: rows.filter((r) => r.active).length,
+      students: rows
     };
   },
 

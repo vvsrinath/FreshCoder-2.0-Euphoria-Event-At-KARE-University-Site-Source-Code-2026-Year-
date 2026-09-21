@@ -1,7 +1,7 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
-  PencilIcon,
+  ArrowRightIcon,
   PlayIcon,
   PlusIcon,
   SearchIcon,
@@ -13,7 +13,7 @@ import { LoadingState } from '../../components/LoadingState';
 import { ErrorState } from '../../components/ErrorState';
 import { EmptyState } from '../../components/EmptyState';
 import { Button } from '../../components/Button';
-import { staffNav } from './staffNav';
+import { StaffNavFooter, staffNav } from './staffNav';
 import { api } from '../../services/api';
 import type { Test } from '../../types';
 
@@ -27,6 +27,15 @@ const TYPE_LABELS: Record<string, string> = {
   DEBUGGING: 'Debugging',
   CODING: 'Programming',
   QUIZ: 'Quiz',
+};
+
+const STATUS_LABELS: Record<string, string> = {
+  ACTIVE: 'Live',
+  SCHEDULED: 'Scheduled',
+  PAUSED: 'Paused',
+  DRAFT: 'Draft',
+  COMPLETED: 'Completed',
+  ARCHIVED: 'Archived',
 };
 
 const STATUS_STYLES: Record<string, string> = {
@@ -48,7 +57,7 @@ function formatSchedule(value: string | null | undefined): string {
 }
 
 function statusBadge(status: string) {
-  const label = status.charAt(0) + status.slice(1).toLowerCase();
+  const label = STATUS_LABELS[status] ?? status.charAt(0) + status.slice(1).toLowerCase();
   return (
     <span className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-bold border ${STATUS_STYLES[status] ?? STATUS_STYLES.DRAFT}`}>
       {label}
@@ -130,21 +139,21 @@ export function TestManagement() {
 
   if (loading) {
     return (
-      <PortalLayout portalLabel="Staff Portal" navItems={staffNav}>
+      <PortalLayout portalLabel="Staff Portal" navItems={staffNav} navFooter={<StaffNavFooter />}>
         <LoadingState label="Loading tests…" />
       </PortalLayout>
     );
   }
   if (error) {
     return (
-      <PortalLayout portalLabel="Staff Portal" navItems={staffNav}>
+      <PortalLayout portalLabel="Staff Portal" navItems={staffNav} navFooter={<StaffNavFooter />}>
         <ErrorState message={error} onRetry={load} />
       </PortalLayout>
     );
   }
 
   return (
-    <PortalLayout portalLabel="Staff Portal" navItems={staffNav}>
+    <PortalLayout portalLabel="Staff Portal" navItems={staffNav} navFooter={<StaffNavFooter />}>
       <div className="space-y-6 font-sans">
         {/* Header with Title & Action */}
         <div className="flex flex-wrap items-center justify-between gap-4">
@@ -303,11 +312,11 @@ export function TestManagement() {
                           </button>
                           <button
                             type="button"
-                            onClick={() => navigate(`/staff/tests/${row.id}/edit`)}
+                            onClick={() => navigate(`/staff/tests/${row.id}`)}
                             className="rounded-lg p-1.5 text-blue-600 hover:bg-blue-50 transition-colors"
-                            title="Edit"
+                            title="Open test workspace"
                           >
-                            <PencilIcon className="h-4 w-4" />
+                            <ArrowRightIcon className="h-4 w-4" />
                           </button>
                           <button
                             type="button"

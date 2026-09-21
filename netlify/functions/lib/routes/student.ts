@@ -21,7 +21,17 @@ function deadlineExpired(attempt: Row): boolean {
 
 /** The server selects and shuffles the question set — never the browser. */
 async function selectQuestionIds(test: Row): Promise<string[]> {
-  const active = await query("SELECT id, type FROM questions WHERE status = 'ACTIVE'");
+  // Questions live inside each test (test_questions). When a test has its own set,
+  // the pool is ONLY that set — never the whole bank. Older tests without a set
+  // fall back to the global active pool for backward compatibility.
+  const owned = await query("SELECT question_id FROM test_questions WHERE test_id = ?", [test["id"]]);
+  const ownedIds = owned.map((r) => str(r["question_id"]));
+  const active = ownedIds.length
+    ? await query(
+        "SELECT id, type FROM questions WHERE status = 'ACTIVE' AND id IN (" + ownedIds.map(() => "?").join(",") + ")",
+        ownedIds
+      )
+    : await query("SELECT id, type FROM questions WHERE status = 'ACTIVE'");
   const mode = str(test["selection_mode"]);
   const questionCount = num(test["question_count"]);
   let picked: string[] = [];
@@ -29,7 +39,7 @@ async function selectQuestionIds(test: Row): Promise<string[]> {
   if (mode === "MANUAL") {
     const manual = (loads(str(test["manual_question_ids"]), []) as unknown[]) as string[];
     const available = new Set(active.map((row) => str(row["id"])));
-    picked = manual.filter((qid) => available.has(qid));
+    picked = manual.filter((qid) => available.has(qid)).slice(0, questionCount);
   } else if (mode === "DISTRIBUTION") {
     const distribution = loads(str(test["distribution"]), {}) as Record<string, unknown>;
     for (const [qtype, count] of Object.entries(distribution)) {
@@ -43,17 +53,18 @@ async function selectQuestionIds(test: Row): Promise<string[]> {
         .map((row) => str(row["id"]));
       picked.push(...shuffle(filler).slice(0, questionCount - picked.length));
     }
+    picked = shuffle(picked).slice(0, questionCount);
   } else {
     let pool = active.map((row) => str(row["id"]));
     const testType = str(test["type"]);
-    if (testType !== "MIXED" && testType !== "QUIZ") {
+    if (testType !== "MIXED" && testType !== "QUIZ" && !ownedIds.length) {
       const typed = active.filter((row) => str(row["type"]) === testType).map((row) => str(row["id"]));
       pool = typed.length ? typed : pool;
     }
     picked = shuffle(pool).slice(0, questionCount);
   }
 
-  return shuffle(picked).slice(0, questionCount);
+  return picked;
 }
 
 /** Never ship answers or explanations to a student. */
@@ -79,12 +90,30 @@ function sanitizeQuestion(row: Row): Record<string, unknown> {
 
 /** Snapshot each question exactly as it was when the attempt started. */
 async function freezeStartedQuestions(attempt: Row): Promise<void> {
+  const test = await queryOne("SELECT * FROM tests WHERE id = ?", [attempt["test_id"]]);
+  const shuffleOptions = test !== undefined && str(test["selection_mode"]) === "RANDOM";
   for (const questionId of (loads(str(attempt["question_ids"]), []) as unknown[]) as string[]) {
     const row = await queryOne("SELECT * FROM questions WHERE id = ?", [questionId]);
     if (row === undefined) continue;
+    const snapshot = { ...row };
+    if (shuffleOptions && str(row["type"]) === "MCQ") {
+      const options = loads(str(row["options"]), []) as string[];
+      if (options.length > 1) {
+        const indexed = options.map((option, index) => ({ option, index }));
+        for (let i = indexed.length - 1; i > 0; i -= 1) {
+          const j = Math.floor(Math.random() * (i + 1));
+          [indexed[i], indexed[j]] = [indexed[j], indexed[i]];
+        }
+        const correct = Number(str(row["answer"]));
+        snapshot["options"] = JSON.stringify(indexed.map((entry) => entry.option));
+        if (Number.isInteger(correct) && correct >= 0 && correct < options.length) {
+          snapshot["answer"] = String(indexed.findIndex((entry) => entry.index === correct));
+        }
+      }
+    }
     await execute(
       "INSERT OR IGNORE INTO frozen_questions (attempt_id, question_id, version, snapshot) VALUES (?, ?, ?, ?)",
-      [attempt["id"], questionId, row["version"], JSON.stringify(row)]
+      [attempt["id"], questionId, row["version"], JSON.stringify(snapshot)]
     );
   }
 }
