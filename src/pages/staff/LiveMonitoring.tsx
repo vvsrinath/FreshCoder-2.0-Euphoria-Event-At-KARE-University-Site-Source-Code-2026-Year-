@@ -14,6 +14,7 @@ import { ConfirmDialog } from '../../components/ConfirmDialog';
 import { staffNav } from './staffNav';
 import { api } from '../../services/api';
 import { relativeTime } from '../../utils/format';
+import { useLive } from '../../hooks/useLive';
 
 /** 8s refresh keeps the room readable without hammering the backend. */
 const REFRESH_MS = 8000;
@@ -40,9 +41,9 @@ export function LiveMonitoring() {
 
   useEffect(() => {
     load();
-    const id = window.setInterval(load, REFRESH_MS);
-    return () => window.clearInterval(id);
   }, [load]);
+
+  useLive({ intervalMs: REFRESH_MS, onEvent: () => load(), channel: 'staff-livemonitoring' });
 
   const run = async (fn: () => Promise<unknown>, message: string) => {
     try {

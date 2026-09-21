@@ -8,6 +8,7 @@ import { useAuth } from '../contexts/AuthContext';
 import { brand } from '../data/eventConfig';
 import { demoCredentials } from '../data/seedUsers';
 import { cn } from '../utils/cn';
+import { ThemeToggle } from '../components/ThemeToggle';
 
 const CAMPUS_IMAGE = '/landing-hero.jpg';
 
@@ -61,7 +62,10 @@ export function Login() {
   };
 
   return (
-    <div className="min-h-screen w-full bg-[#f8fafc] flex flex-col justify-between dark:bg-[#161617]">
+    <div className="relative min-h-screen w-full bg-[#f8fafc] flex flex-col justify-between dark:bg-[#161617]">
+      <div className="absolute right-5 top-5 z-20">
+        <ThemeToggle />
+      </div>
       <div className="grid min-h-[calc(100vh-80px)] w-full lg:grid-cols-[1.1fr_1.2fr]">
         {/* Left Visual Column */}
         <aside className="relative hidden overflow-hidden bg-[#0a1026] lg:flex lg:flex-col justify-between p-10 lg:p-14 text-white">

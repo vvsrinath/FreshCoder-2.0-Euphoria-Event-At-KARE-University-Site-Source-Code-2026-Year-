@@ -12,6 +12,7 @@ import { studentNav } from './studentNav';
 import { api } from '../../services/api';
 import { formatDateTime } from '../../utils/format';
 import { testTypeLabels } from '../../services/evaluation';
+import { useLive } from '../../hooks/useLive';
 
 export function MyTests() {
   const navigate = useNavigate();
@@ -39,11 +40,9 @@ export function MyTests() {
 
   useEffect(() => {
     load(true);
-    const id = window.setInterval(() => {
-      load(false);
-    }, 15000);
-    return () => window.clearInterval(id);
   }, [load]);
+
+  useLive({ intervalMs: 15000, onEvent: () => load(false), channel: 'student-mytests' });
 
   const columns: Column<any>[] = [
   {

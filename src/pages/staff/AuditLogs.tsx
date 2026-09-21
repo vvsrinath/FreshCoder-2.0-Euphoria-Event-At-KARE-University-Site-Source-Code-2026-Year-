@@ -10,6 +10,7 @@ import { EmptyState } from '../../components/EmptyState';
 import { staffNav } from './staffNav';
 import { api } from '../../services/api';
 import { formatDateTime, titleCase } from '../../utils/format';
+import { useLive } from '../../hooks/useLive';
 
 export function AuditLogs() {
   const [logs, setLogs] = useState<any[]>([]);
@@ -37,11 +38,9 @@ export function AuditLogs() {
 
   useEffect(() => {
     load(true);
-    const id = window.setInterval(() => {
-      load(false);
-    }, 15000);
-    return () => window.clearInterval(id);
   }, [load]);
+
+  useLive({ intervalMs: 15000, onEvent: () => load(false), channel: 'staff-auditlogs' });
 
   const columns: Column<any>[] = [
   { key: 'time', header: 'Time', render: (row) => formatDateTime(row.createdAt) },

@@ -51,7 +51,6 @@ export function useLive({ intervalMs, onEvent, channel }: UseLiveOptions): { mod
       };
     }
 
-    const isProd = (import.meta as unknown as { env?: Record<string, string> }).env?.PROD === 'true';
     const base = (import.meta as unknown as { env?: Record<string, string> }).env?.VITE_API_BASE_URL || '';
 
     const connect = async () => {
@@ -93,7 +92,7 @@ export function useLive({ intervalMs, onEvent, channel }: UseLiveOptions): { mod
           setMode('polling');
           startPolling();
           const delay = Math.min(30000, 1000 * 2 ** Math.min(attempts++, 5));
-          reconnectTimer = window.setTimeout(connect, delay + (isProd ? 0 : 0));
+          reconnectTimer = window.setTimeout(connect, delay);
         }
       }
     };

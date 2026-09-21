@@ -11,6 +11,7 @@ import { EmptyState } from '../../components/EmptyState';
 import { StaffNavFooter, staffNav } from './staffNav';
 import { api } from '../../services/api';
 import { formatDateTime, titleCase } from '../../utils/format';
+import { useLive } from '../../hooks/useLive';
 
 export function SecurityEvents() {
   const [events, setEvents] = useState<any[]>([]);
@@ -40,11 +41,9 @@ export function SecurityEvents() {
 
   useEffect(() => {
     load(true);
-    const id = window.setInterval(() => {
-      load(false);
-    }, 15000);
-    return () => window.clearInterval(id);
   }, [load]);
+
+  useLive({ intervalMs: 15000, onEvent: () => load(false), channel: 'staff-securityevents' });
 
   const columns: Column<any>[] = [
   { key: 'time', header: 'Time', render: (row) => formatDateTime(row.createdAt) },

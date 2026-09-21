@@ -16,6 +16,7 @@ import { Button } from '../../components/Button';
 import { StaffNavFooter, staffNav } from './staffNav';
 import { api } from '../../services/api';
 import type { Test } from '../../types';
+import { useLive } from '../../hooks/useLive';
 
 const TYPE_LABELS: Record<string, string> = {
   MIXED: 'Mixed',
@@ -94,11 +95,9 @@ export function TestManagement() {
 
   useEffect(() => {
     load(true);
-    const id = window.setInterval(() => {
-      load(false);
-    }, 15000);
-    return () => window.clearInterval(id);
   }, [load]);
+
+  useLive({ intervalMs: 15000, onEvent: () => load(false), channel: 'staff-testmanagement' });
 
   const startTest = useCallback(
     async (row: Test) => {

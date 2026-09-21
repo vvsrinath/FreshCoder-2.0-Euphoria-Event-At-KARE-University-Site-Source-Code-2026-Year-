@@ -12,6 +12,7 @@ import { EmptyState } from '../../components/EmptyState';
 import { StaffNavFooter, staffNav } from './staffNav';
 import { api } from '../../services/api';
 import { relativeTime } from '../../utils/format';
+import { useLive } from '../../hooks/useLive';
 
 export function EditRequests() {
   const [requests, setRequests] = useState<any[]>([]);
@@ -31,9 +32,9 @@ export function EditRequests() {
 
   useEffect(() => {
     load();
-    const id = window.setInterval(load, 10000);
-    return () => window.clearInterval(id);
   }, [load]);
+
+  useLive({ intervalMs: 10000, onEvent: () => load(), channel: 'staff-editrequests' });
 
   const decide = async (requestId: string, approve: boolean) => {
     try {
