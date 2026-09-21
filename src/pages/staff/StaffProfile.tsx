@@ -83,7 +83,6 @@ export function StaffProfile() {
 
         <Card>
           <CardHeader
-            icon={<ShieldCheckIcon className="h-5 w-5 text-slate-400" />}
             title="Change password"
             description="For your security, use a unique password with at least 8 characters."
           />

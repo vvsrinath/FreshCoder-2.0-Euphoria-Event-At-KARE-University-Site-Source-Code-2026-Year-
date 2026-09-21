@@ -217,7 +217,7 @@ function TestControls({ test, onChanged }: { test: Test; onChanged: () => void }
       )}
       {test.status === 'ACTIVE' && (
         <Button
-          variant="warning"
+          variant="secondary"
           loading={busy === 'pause'}
           icon={<PauseIcon className="h-4 w-4" />}
           onClick={() => run('pause', () => api.stopTest(test.id), 'Test paused.')}
@@ -387,7 +387,6 @@ function QuestionsStep({
     const reordered = [...questions];
     const [item] = reordered.splice(index, 1);
     reordered.splice(target, 0, item);
-    setQuestions(reordered);
     try {
       await api.reorderTestQuestions(test.id, reordered.map((q) => q.id));
       onChanged();

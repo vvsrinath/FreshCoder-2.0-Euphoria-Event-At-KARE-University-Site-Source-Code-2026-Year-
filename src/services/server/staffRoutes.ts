@@ -395,13 +395,13 @@ export const staffRoutes: Record<string, Handler> = {
       id: `Q${String(db.questions.length + 1).padStart(3, '0')}${uid('').slice(-2)}`,
       version: 1,
       title: String(body.title ?? '').trim() || prompt.slice(0, 80),
-      type: qtype,
+      type: qtype as Question['type'],
       topic: String(body.topic ?? 'General'),
-      difficulty: String(body.difficulty ?? 'EASY'),
+      difficulty: String(body.difficulty ?? 'EASY') as Question['difficulty'],
       marks,
       status: 'ACTIVE',
       prompt,
-      code: body.code ?? null,
+      code: body.code ?? undefined,
       options: Array.isArray(body.options) ? body.options : undefined,
       answer: String(body.answer ?? body.correctAnswer ?? ''),
       alternatives: Array.isArray(body.alternatives) ? body.alternatives : undefined,
@@ -500,7 +500,7 @@ export const staffRoutes: Record<string, Handler> = {
           marks,
           status: 'ACTIVE',
           prompt,
-          code: null,
+          code: undefined,
           options: body.options ?? undefined,
           answer,
           alternatives: body.alternatives,
@@ -635,7 +635,7 @@ export const staffRoutes: Record<string, Handler> = {
     attempt.status = 'LOCKED';
     attempt.lockedByStaff = user.id;
     attempt.lockReason = ctx.body?.reason ?? 'Locked by examination staff';
-    audit(user.id, user.role, 'Locked student', ctx.params.id, attempt.lockReason);
+    audit(user.id, user.role, 'Locked student', ctx.params.id, attempt.lockReason ?? undefined);
     security('STUDENT_LOCKED', user.id, user.role, `Locked ${ctx.params.id}`, {
       attemptId: attempt.id,
       testId: attempt.testId

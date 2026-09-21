@@ -54,7 +54,12 @@ export const handler: Handler = async (event) => {
     );
     return {
       statusCode: response.statusCode,
-      headers: { ...response.headers, "Access-Control-Allow-Origin": "*", "Access-Control-Allow-Headers": "Content-Type, Authorization" },
+      headers: {
+        "Content-Type": "application/json",
+        ...response.headers,
+        "Access-Control-Allow-Origin": "*",
+        "Access-Control-Allow-Headers": "Content-Type, Authorization"
+      },
       body: response.body,
     };
   } catch (err) {
