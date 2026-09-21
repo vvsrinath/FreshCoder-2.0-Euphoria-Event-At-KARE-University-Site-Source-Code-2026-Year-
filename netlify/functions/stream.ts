@@ -1,58 +1,56 @@
 /**
- * Server-sent-events (SSE) keep-alive stream.
+ * Server-sent-events (SSE) push channel.
  *
- * Emits an empty `data:` tick every few seconds so connected clients can
- * refresh their dashboard data. This is intentionally a "poke", not a data
- * channel — the /api routes stay the single source of truth, so nothing
- * sensitive is exposed here and clients still need their own auth.
+ * Emits an empty `data:` tick on a short schedule, then closes. Netlify's
+ * function proxy buffers a response body until it completes, so an
+ * indefinitely-open stream never flushes; instead we send a bounded burst and
+ * the client (src/hooks/useLive.ts) immediately reconnects for the next one.
+ * This yields near-real-time refresh through the buffering proxy, and the hook
+ * falls back to classic polling if this endpoint is unavailable.
  *
- * Netlify may idle-close the connection; the client reconnect logic in
- * src/hooks/useLive.ts falls back to polling until the stream reconnects.
+ * This is a "poke" channel only — no sensitive data, so no auth required.
+ * Dashboards read the /api routes, which stay the single source of truth.
  */
 
-export type Handler = (req: Request, options: { path: string }) => Response | Promise<Response>;
+const TICK_MS = 3000;
+const MAX_TICKS = 4;
 
-const TICK_MS = 4000;
-const MAX_OPEN_MS = 45 * 1000;
-
-export const handler: Handler = () => {
+export default async function handler(): Promise<Response> {
   const encoder = new TextEncoder();
 
   const stream = new ReadableStream<Uint8Array>({
     start(controller) {
+      let ticks = 0;
       let closed = false;
+      const finish = () => {
+        if (closed) return;
+        closed = true;
+        clearInterval(heartbeat);
+        try {
+          controller.close();
+        } catch {
+          /* already closed */
+        }
+      };
       const send = () => {
         if (closed) return;
         try {
-          controller.enqueue(encoder.encode(`data: ${JSON.stringify({ type: "tick", at: Date.now() })}\n\n`));
+          controller.enqueue(
+            encoder.encode(`data: ${JSON.stringify({ type: "tick", at: Date.now() })}\n\n`)
+          );
         } catch {
-          /* client gone */
+          finish();
+          return;
         }
+        ticks += 1;
+        if (ticks >= MAX_TICKS) finish();
       };
 
       const heartbeat = setInterval(send, TICK_MS);
-      const guard = setTimeout(() => {
-        if (!closed && typeof controller.close === "function") {
-          closed = true;
-          clearInterval(heartbeat);
-          try {
-            controller.close();
-          } catch {
-            /* already closed */
-          }
-        }
-      }, MAX_OPEN_MS);
-
       send();
-
-      return () => {
-        closed = true;
-        clearInterval(heartbeat);
-        clearTimeout(guard);
-      };
     },
     cancel() {
-      /* cleanup handled in start() teardown */
+      /* teardown handled in start() */
     },
   });
 
@@ -65,4 +63,4 @@ export const handler: Handler = () => {
       "Access-Control-Allow-Origin": "*",
     },
   });
-};
+}
