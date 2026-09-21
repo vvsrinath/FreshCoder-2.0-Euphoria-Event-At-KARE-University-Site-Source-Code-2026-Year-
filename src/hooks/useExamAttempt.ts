@@ -504,7 +504,7 @@ export function useExamAttempt(testId: string) {
     };
 
     // Override console methods to make DevTools console useless
-    const noop = () => {};
+    const noop = (..._args: unknown[]) => undefined;
     const origLog = console.log;
     const origWarn = console.warn;
     const origError = console.error;

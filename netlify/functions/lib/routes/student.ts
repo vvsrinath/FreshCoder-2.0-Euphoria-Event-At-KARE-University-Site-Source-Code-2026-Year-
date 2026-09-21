@@ -92,8 +92,16 @@ function sanitizeQuestion(row: Row): Record<string, unknown> {
 async function freezeStartedQuestions(attempt: Row): Promise<void> {
   const test = await queryOne("SELECT * FROM tests WHERE id = ?", [attempt["test_id"]]);
   const shuffleOptions = test !== undefined && str(test["selection_mode"]) === "RANDOM";
-  for (const questionId of (loads(str(attempt["question_ids"]), []) as unknown[]) as string[]) {
-    const row = await queryOne("SELECT * FROM questions WHERE id = ?", [questionId]);
+  const ids = (loads(str(attempt["question_ids"]), []) as unknown[]) as string[];
+  if (ids.length === 0) return;
+  const rows = await query(
+    "SELECT * FROM questions WHERE id IN (" + ids.map(() => "?").join(",") + ")",
+    ids
+  );
+  const byId = new Map(rows.map((r) => [str(r["id"]), r]));
+  const values: unknown[] = [];
+  for (const questionId of ids) {
+    const row = byId.get(questionId);
     if (row === undefined) continue;
     const snapshot = { ...row };
     if (shuffleOptions && str(row["type"]) === "MCQ") {
@@ -111,34 +119,59 @@ async function freezeStartedQuestions(attempt: Row): Promise<void> {
         }
       }
     }
+    values.push(attempt["id"], questionId, row["version"], JSON.stringify(snapshot));
+  }
+  if (values.length > 0) {
+    const rows_ = values.length / 4;
     await execute(
-      "INSERT OR IGNORE INTO frozen_questions (attempt_id, question_id, version, snapshot) VALUES (?, ?, ?, ?)",
-      [attempt["id"], questionId, row["version"], JSON.stringify(snapshot)]
+      "INSERT OR IGNORE INTO frozen_questions (attempt_id, question_id, version, snapshot) VALUES " +
+        new Array(rows_).fill("(?, ?, ?, ?)").join(", "),
+      values
     );
   }
 }
 
-async function frozenQuestion(attempt: Row, questionId: string): Promise<Row | undefined> {
-  const row = await queryOne("SELECT snapshot FROM frozen_questions WHERE attempt_id = ? AND question_id = ?", [
+/**
+ * Fetch every frozen snapshot for an attempt in one round trip, falling back
+ * to live question rows for any question that was never frozen.
+ */
+async function frozenQuestionsBatch(attempt: Row, questionIds: string[]): Promise<Map<string, Row>> {
+  const map = new Map<string, Row>();
+  if (questionIds.length === 0) return map;
+  const seen = new Set(questionIds);
+  const rows = await query("SELECT question_id, snapshot FROM frozen_questions WHERE attempt_id = ?", [
     attempt["id"],
-    questionId,
   ]);
-  if (row !== undefined) {
+  const missing: string[] = [];
+  for (const r of rows) {
+    const qid = str(r["question_id"]);
+    if (!seen.has(qid)) continue;
     try {
-      return JSON.parse(str(row["snapshot"])) as Row;
+      map.set(qid, JSON.parse(str(r["snapshot"])) as Row);
     } catch {
-      // fall through to live row
+      missing.push(qid);
     }
   }
-  return queryOne("SELECT * FROM questions WHERE id = ?", [questionId]);
+  for (const qid of seen) {
+    if (!map.has(qid)) missing.push(qid);
+  }
+  if (missing.length > 0) {
+    const live = await query(
+      "SELECT * FROM questions WHERE id IN (" + missing.map(() => "?").join(",") + ")",
+      missing
+    );
+    for (const r of live) map.set(str(r["id"]), r);
+  }
+  return map;
 }
 
 async function attemptPayload(attempt: Row): Promise<Record<string, unknown>> {
   const test = await queryOne("SELECT * FROM tests WHERE id = ?", [attempt["test_id"]]);
   const questionIds = (loads(str(attempt["question_ids"]), []) as unknown[]) as string[];
+  const frozen = await frozenQuestionsBatch(attempt, questionIds);
   const questions: Record<string, unknown>[] = [];
   for (const qid of questionIds) {
-    const row = await frozenQuestion(attempt, qid);
+    const row = frozen.get(qid);
     if (row) questions.push(sanitizeQuestion(row));
   }
   const answers = await query("SELECT * FROM answers WHERE attempt_id = ?", [attempt["id"]]);
@@ -187,24 +220,41 @@ export async function finalizeAttempt(
   const test = await queryOne("SELECT * FROM tests WHERE id = ?", [attempt["test_id"]]);
   const questionIds = (loads(str(attempt["question_ids"]), []) as unknown[]) as string[];
 
+  const existingAnswers = await query(
+    "SELECT question_id, value, locked, edit_granted FROM answers WHERE attempt_id = ?",
+    [attempt["id"]]
+  );
+  const existingMap = new Map(existingAnswers.map((r) => [str(r["question_id"]), r]));
+  const wrote = new Set<string>();
+  const inserts: [string, string][] = [];
+  const updates: [string, string][] = [];
   for (const questionId of questionIds) {
     const value = incoming[questionId];
     if (value === null || value === undefined || typeof value !== "string") continue;
-    const existing = await queryOne("SELECT * FROM answers WHERE attempt_id = ? AND question_id = ?", [
-      attempt["id"],
-      questionId,
-    ]);
+    const existing = existingMap.get(questionId);
     if (existing === undefined) {
-      await execute(
-        "INSERT INTO answers (attempt_id, question_id, value, locked, edit_granted, updated_at) VALUES (?, ?, ?, 1, 0, ?)",
-        [attempt["id"], questionId, value.slice(0, 10000), utcNow()]
-      );
+      inserts.push([questionId, value.slice(0, 10000)]);
     } else if (Number(existing["locked"]) === 0 || Number(existing["edit_granted"]) === 1) {
-      await execute(
-        "UPDATE answers SET value = ?, locked = 1, edit_granted = 0, updated_at = ? WHERE attempt_id = ? AND question_id = ?",
-        [value.slice(0, 10000), utcNow(), attempt["id"], questionId]
-      );
+      updates.push([questionId, value.slice(0, 10000)]);
     }
+  }
+  if (inserts.length > 0) {
+    const now = utcNow();
+    const params: unknown[] = [];
+    for (const [qid, val] of inserts) params.push(attempt["id"], qid, val, now);
+    await execute(
+      "INSERT INTO answers (attempt_id, question_id, value, locked, edit_granted, updated_at) VALUES " +
+        new Array(inserts.length).fill("(?, ?, ?, 1, 0, ?)").join(", "),
+      params
+    );
+    for (const [qid] of inserts) wrote.add(qid);
+  }
+  for (const [qid, val] of updates) {
+    await execute(
+      "UPDATE answers SET value = ?, locked = 1, edit_granted = 0, updated_at = ? WHERE attempt_id = ? AND question_id = ?",
+      [val, utcNow(), attempt["id"], qid]
+    );
+    wrote.add(qid);
   }
 
   let correct = 0;
@@ -214,15 +264,14 @@ export async function finalizeAttempt(
   let maxScore = 0;
   const breakdown: Record<string, unknown>[] = [];
 
+  const frozen = await frozenQuestionsBatch(attempt, questionIds);
   for (const questionId of questionIds) {
-    const question = await frozenQuestion(attempt, questionId);
+    const question = frozen.get(questionId);
     if (!question) continue;
     maxScore += num(question["marks"]);
-    const record = await queryOne("SELECT * FROM answers WHERE attempt_id = ? AND question_id = ?", [
-      attempt["id"],
-      questionId,
-    ]);
-    const given = record ? str(record["value"]) : "";
+    const given = wrote.has(questionId)
+      ? String(incoming[questionId] ?? "")
+      : str(existingMap.get(questionId)?.["value"] ?? "");
     if (!given.trim()) {
       unanswered += 1;
       breakdown.push({
@@ -317,18 +366,51 @@ async function isAssigned(testId: string, studentId: string): Promise<boolean> {
   return !anyAssignment;
 }
 
+function assignedFromSets(testId: string, studentId: string, testHasAssignments: Set<string>, studentAssigned: Set<string>): boolean {
+  return studentAssigned.has(testId) || !testHasAssignments.has(testId);
+}
+
 async function assignedTests(studentId: string): Promise<Record<string, unknown>[]> {
   const rows = await query(
     "SELECT * FROM tests WHERE status IN ('SCHEDULED','ACTIVE','PAUSED','COMPLETED') ORDER BY scheduled_start IS NULL, scheduled_start"
   );
+  const testIds = rows.map((t) => str(t["id"]));
+  const testHasAssignments = new Set<string>();
+  const studentAssigned = new Set<string>();
+  let attemptMap = new Map<string, Row>();
+  let resultMap = new Map<string, Row>();
+  if (testIds.length > 0) {
+    const placeholders = testIds.map(() => "?").join(",");
+    const assignments = await query(
+      `SELECT test_id, student_id FROM student_test_assignments WHERE test_id IN (${placeholders})`,
+      testIds
+    );
+    for (const a of assignments) {
+      testHasAssignments.add(str(a["test_id"]));
+      if (str(a["student_id"]) === studentId) studentAssigned.add(str(a["test_id"]));
+    }
+    const attempts = await query(
+      `SELECT * FROM attempts WHERE test_id IN (${placeholders}) AND student_id = ?`,
+      [...testIds, studentId]
+    );
+    attemptMap = new Map(attempts.map((a) => [str(a["test_id"]), a]));
+    const results = await query(
+      `SELECT * FROM results WHERE test_id IN (${placeholders}) AND student_id = ?`,
+      [...testIds, studentId]
+    );
+    resultMap = new Map(results.map((r) => [str(r["test_id"]), r]));
+  }
   const out: Record<string, unknown>[] = [];
   for (const test of rows) {
     const status = str(test["status"]);
-    if ((status === "ACTIVE" || status === "PAUSED" || status === "COMPLETED") && !(await isAssigned(str(test["id"]), studentId))) {
+    if (
+      (status === "ACTIVE" || status === "PAUSED" || status === "COMPLETED") &&
+      !assignedFromSets(str(test["id"]), studentId, testHasAssignments, studentAssigned)
+    ) {
       continue;
     }
-    const attempt = await queryOne("SELECT * FROM attempts WHERE test_id = ? AND student_id = ?", [test["id"], studentId]);
-    const result = await queryOne("SELECT * FROM results WHERE test_id = ? AND student_id = ?", [test["id"], studentId]);
+    const attempt = attemptMap.get(str(test["id"]));
+    const result = resultMap.get(str(test["id"]));
     out.push({
       id: test["id"],
       name: test["name"],

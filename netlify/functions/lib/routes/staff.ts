@@ -838,25 +838,62 @@ async function live(ctx: RouteCtx): Promise<HttpResponse> {
   const attempts = testId
     ? await query("SELECT * FROM attempts WHERE test_id = ?", [testId])
     : await query("SELECT * FROM attempts");
+  const attemptIds = attempts.map((a) => str(a["id"]));
+  const studentIds = [...new Set(attempts.map((a) => str(a["student_id"])))];
+  const testIds = [...new Set(attempts.map((a) => str(a["test_id"])))];
+  const answersByAttempt = new Map<string, { answered: number; locked: number }>();
+  const nameById = new Map<string, string>();
+  const testNameById = new Map<string, string>();
+  const testStatusById = new Map<string, string>();
+  const eventCountById = new Map<string, number>();
+  if (attemptIds.length > 0) {
+    const placeholder = attemptIds.map(() => "?").join(",");
+    const answerRows = await query(
+      `SELECT attempt_id, value, locked FROM answers WHERE attempt_id IN (${placeholder})`,
+      attemptIds
+    );
+    for (const a of answerRows) {
+      const bucket = answersByAttempt.get(str(a["attempt_id"])) ?? { answered: 0, locked: 0 };
+      if (str(a["value"]).trim() !== "") bucket.answered += 1;
+      if (Number(a["locked"]) === 1) bucket.locked += 1;
+      answersByAttempt.set(str(a["attempt_id"]), bucket);
+    }
+    const eventRows = await query(
+      `SELECT attempt_id, COUNT(*) AS n FROM security_events WHERE attempt_id IN (${placeholder}) GROUP BY attempt_id`,
+      attemptIds
+    );
+    for (const e of eventRows) eventCountById.set(str(e["attempt_id"]), num(e["n"]));
+    if (studentIds.length > 0) {
+      const sPlaceholder = studentIds.map(() => "?").join(",");
+      const users = await query(`SELECT id, name FROM users WHERE id IN (${sPlaceholder})`, studentIds);
+      for (const u of users) nameById.set(str(u["id"]), str(u["name"]));
+    }
+    if (testIds.length > 0) {
+      const tPlaceholder = testIds.map(() => "?").join(",");
+      const tests = await query(`SELECT id, name, status FROM tests WHERE id IN (${tPlaceholder})`, testIds);
+      for (const t of tests) {
+        testNameById.set(str(t["id"]), str(t["name"]));
+        testStatusById.set(str(t["id"]), str(t["status"]));
+      }
+    }
+  }
   const rows: Record<string, unknown>[] = [];
   for (const attempt of attempts) {
-    const answers = await query("SELECT * FROM answers WHERE attempt_id = ?", [attempt["id"]]);
-    const student = await queryOne("SELECT name FROM users WHERE id = ?", [attempt["student_id"]]);
-    const test = await queryOne("SELECT name, status FROM tests WHERE id = ?", [attempt["test_id"]]);
-    const events = await queryOne("SELECT COUNT(*) n FROM security_events WHERE attempt_id = ?", [attempt["id"]]);
+    const aid = str(attempt["id"]);
+    const counts = answersByAttempt.get(aid) ?? { answered: 0, locked: 0 };
     rows.push({
-      attemptId: attempt["id"],
+      attemptId: aid,
       studentId: attempt["student_id"],
-      name: student ? student["name"] : attempt["student_id"],
+      name: nameById.get(str(attempt["student_id"])) || attempt["student_id"],
       testId: attempt["test_id"],
-      testName: test ? test["name"] : attempt["test_id"],
+      testName: testNameById.get(str(attempt["test_id"])) || attempt["test_id"],
       status: attempt["status"],
       currentQuestion: num(attempt["current_question"]) + 1,
       totalQuestions: (loads(str(attempt["question_ids"]), []) as unknown[]).length,
-      answered: answers.filter((a) => str(a["value"]).trim() !== "").length,
-      locked: answers.filter((a) => Number(a["locked"]) === 1).length,
+      answered: counts.answered,
+      locked: counts.locked,
       lastActivity: attempt["last_activity"],
-      securityEvents: num(events?.["n"]),
+      securityEvents: eventCountById.get(aid) ?? 0,
     });
   }
   const finalStatuses = ["SUBMITTED", "FORCE_SUBMITTED", "TIME_EXPIRED"];
@@ -948,19 +985,31 @@ async function staffStudents(ctx: RouteCtx): Promise<HttpResponse> {
     params.push(term, term);
   }
   const rows = await query(sql + " ORDER BY id", params);
+  const ids = rows.map((r) => str(r["id"]));
+  const latestByStudent = new Map<string, Row>();
+  const takenCounts = new Map<string, number>();
+  if (ids.length > 0) {
+    const placeholder = ids.map(() => "?").join(",");
+    const attempts = await query(
+      `SELECT a.*, t.name AS test_name, (COALESCE(a.started_at, a.last_activity)) AS sort_key FROM attempts a JOIN tests t ON t.id = a.test_id WHERE a.student_id IN (${placeholder})`,
+      ids
+    );
+    for (const a of attempts) {
+      const sid = str(a["student_id"]);
+      takenCounts.set(sid, (takenCounts.get(sid) ?? 0) + 1);
+      const current = latestByStudent.get(sid);
+      if (!current || str(current["sort_key"]) < str(a["sort_key"])) latestByStudent.set(sid, a);
+    }
+  }
   const students: Record<string, unknown>[] = [];
   for (const r of rows) {
-    const latest = await queryOne(
-      "SELECT a.*, t.name AS test_name FROM attempts a JOIN tests t ON t.id = a.test_id WHERE a.student_id = ? ORDER BY COALESCE(a.started_at, a.last_activity) DESC LIMIT 1",
-      [r["id"]]
-    );
-    const taken = num((await queryOne("SELECT COUNT(DISTINCT test_id) n FROM attempts WHERE student_id = ?", [r["id"]]))?.["n"]);
+    const latest = latestByStudent.get(str(r["id"]));
     students.push({
       id: r["id"],
       name: r["name"],
       email: r["email"],
       active: bool(r["active"]),
-      takenTests: taken,
+      takenTests: takenCounts.get(str(r["id"])) ?? 0,
       currentStatus: latest ? str(latest["status"]) : "NOT_STARTED",
       currentTest: latest ? str(latest["test_name"]) : null,
       lastActivity: latest ? latest["last_activity"] : null,

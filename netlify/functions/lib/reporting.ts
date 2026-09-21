@@ -110,9 +110,15 @@ export async function questionLevelAnalytics(testId: string): Promise<Record<str
       difficultyIndex: Math.round((bucket["correct"] / instances) * 1000) / 1000,
     };
   });
+  const ids = out.map((b) => String(b["questionId"])).filter(Boolean);
+  const titles = new Map<string, string>();
+  if (ids.length > 0) {
+    const placeholder = ids.map(() => "?").join(",");
+    const rows = await query("SELECT id, title FROM questions WHERE id IN (" + placeholder + ")", ids);
+    for (const r of rows) titles.set(str(r["id"]), str(r["title"]));
+  }
   for (const bucket of out) {
-    const title = await queryOne("SELECT title FROM questions WHERE id = ?", [String(bucket["questionId"])]);
-    bucket["title"] = title ? str(title["title"]) : String(bucket["questionId"]);
+    bucket["title"] = titles.get(String(bucket["questionId"])) ?? String(bucket["questionId"]);
   }
   return out.sort((a, b) => num(a["difficultyIndex"]) - num(b["difficultyIndex"]));
 }

@@ -19,11 +19,19 @@ export const handler: Handler = async (event) => {
         roles: [] as string[],
         handler: async () => {
           const { config } = await import("./lib/config");
+          const { queryOne } = await import("./lib/db");
+          let indexCount: number | null = null;
+          try {
+            indexCount = Number((await queryOne("SELECT COUNT(*) n FROM sqlite_master WHERE type = 'index'"))?.["n"]) || 0;
+          } catch {
+            /* keep null when the DB is unreachable */
+          }
           return ok({
             status: "ok",
             env: "functions",
             tursoUrlSet: !!config.tursoDbUrl,
             tursoTokenSet: !!config.tursoAuthToken,
+            tursoIndexes: indexCount,
             tursoUrlPrefix: config.tursoDbUrl ? config.tursoDbUrl.slice(0, 20) + "..." : "MISSING",
           });
         },

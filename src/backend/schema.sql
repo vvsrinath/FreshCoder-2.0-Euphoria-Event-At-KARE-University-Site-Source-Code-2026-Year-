@@ -174,6 +174,9 @@ CREATE TABLE IF NOT EXISTS results (
 );
 CREATE INDEX IF NOT EXISTS idx_results_test ON results(test_id);
 CREATE INDEX IF NOT EXISTS idx_results_student ON results(student_id);
+CREATE INDEX IF NOT EXISTS idx_results_student_published ON results(student_id, published);
+CREATE INDEX IF NOT EXISTS idx_tests_scheduled ON tests(scheduled_start);
+CREATE INDEX IF NOT EXISTS idx_answers_attempt_q ON answers(attempt_id, question_id);
 
 CREATE TABLE IF NOT EXISTS security_events (
     id         INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -219,7 +222,6 @@ CREATE TABLE IF NOT EXISTS timing_changes (
 CREATE INDEX IF NOT EXISTS idx_timing_test ON timing_changes(test_id);
 
 -- Hot-path indexes: every list screen filters and sorts on these columns.
-CREATE INDEX IF NOT EXISTS idx_answers_attempt ON answers(attempt_id);
 CREATE INDEX IF NOT EXISTS idx_security_time ON security_events(created_at);
 CREATE INDEX IF NOT EXISTS idx_security_actor ON security_events(actor);
 CREATE INDEX IF NOT EXISTS idx_results_test_published ON results(test_id, published);
