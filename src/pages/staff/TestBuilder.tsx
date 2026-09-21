@@ -14,16 +14,8 @@ import { api } from '../../services/api';
 import { questionTypeLabels, testTypeLabels } from '../../services/evaluation';
 import type { QuestionType, SelectionMode, TestType } from '../../types';
 
-const questionCountPresets = [10, 20, 30, 40, 50, 75, 100];
+const questionCountPresets = [10, 20, 30, 40, 50];
 const durationPresets = [30, 45, 60, 90, 120];
-const distributionTypes: QuestionType[] = [
-'MCQ',
-'TRUE_FALSE',
-'FILL_BLANK',
-'OUTPUT',
-'CODE_COMPLETION',
-'DEBUGGING',
-'CODING'];
 
 
 interface FormState {
@@ -44,7 +36,7 @@ const emptyForm: FormState = {
   type: 'MIXED',
   questionCount: 30,
   durationMinutes: 60,
-  selectionMode: 'RANDOM',
+  selectionMode: 'MANUAL',
   distribution: {},
   scheduledStart: '',
   timingReason: ''
@@ -86,23 +78,11 @@ export function TestBuilder() {
     setForm((prev) => ({ ...prev, [key]: value }));
   }, []);
 
-  const distributionTotal = useMemo(
-    () => Object.values(form.distribution).reduce((sum, n) => sum + (Number(n) || 0), 0),
-    [form.distribution]
-  );
-
-  const distributionValid =
-  form.selectionMode !== 'DISTRIBUTION' || distributionTotal === Number(form.questionCount);
-
   const durationChanged = originalDuration !== null && originalDuration !== form.durationMinutes;
 
   const save = async () => {
     if (!form.name.trim()) {
       toast.error('Test name is required.');
-      return;
-    }
-    if (!distributionValid) {
-      toast.error('The question distribution must equal the total question count.');
       return;
     }
     setSaving(true);
@@ -231,17 +211,12 @@ export function TestBuilder() {
                 </div>
               </div>
 
-              <SelectField
-              label="Question selection"
-              value={form.selectionMode}
-              onChange={(e) => update('selectionMode', e.target.value as SelectionMode)}
-              options={[
-              { value: 'RANDOM', label: 'Random from bank' },
-              { value: 'MANUAL', label: 'Manual selection' },
-              { value: 'DISTRIBUTION', label: 'Type distribution' }]
-              }
-              hint="The server picks and shuffles the question set per student." />
-            
+              <div className="rounded-xl bg-blue-50 p-4 ring-1 ring-blue-200">
+                <p className="text-sm font-bold text-blue-900">How to add questions</p>
+                <p className="mt-1 text-xs leading-relaxed text-blue-700">
+                  Go to <strong>Question Bank</strong> → add questions via <strong>CSV file</strong> or <strong>manual entry</strong>. Then pick them for this test after creation.
+                </p>
+              </div>
 
               <TextField
               label="Scheduled start"
@@ -265,48 +240,7 @@ export function TestBuilder() {
             </div>
           </Card>
 
-          {form.selectionMode === 'DISTRIBUTION' ?
-        <Card>
-              <CardHeader
-            title="Question distribution"
-            description="The total must match the question count before the test can be scheduled."
-            action={
-            <span
-              className={`rounded border px-2.5 py-1 text-sm font-semibold ${
-              distributionValid ?
-              'border-emerald-200 bg-emerald-50 text-emerald-700' :
-              'border-red-200 bg-red-50 text-red-700'}`
-              }>
-              
-                    {distributionTotal} / {form.questionCount}
-                  </span>
-            } />
-          
-              <div className="grid gap-4 p-5 sm:grid-cols-2 lg:grid-cols-3">
-                {distributionTypes.map((type) =>
-            <TextField
-              key={type}
-              label={questionTypeLabels[type]}
-              type="number"
-              min={0}
-              value={String(form.distribution[type] ?? 0)}
-              onChange={(e) =>
-              update('distribution', {
-                ...form.distribution,
-                [type]: Number(e.target.value)
-              })
-              } />
 
-            )}
-              </div>
-              {!distributionValid ?
-          <p className="border-t border-slate-200 px-5 py-3 text-sm text-red-700" role="alert">
-                  The distribution adds up to {distributionTotal}, but the test needs{' '}
-                  {form.questionCount} questions.
-                </p> :
-          null}
-            </Card> :
-        null}
         </div>
       }
     </PortalLayout>);
