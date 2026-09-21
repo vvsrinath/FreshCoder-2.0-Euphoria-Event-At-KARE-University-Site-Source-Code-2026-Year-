@@ -106,17 +106,16 @@ def login():
         security_event("LOGIN_FAILURE", user["id"], user["role"], f"Wrong portal ({portal})")
         return jsonify({"message": "This account cannot sign in from this portal."}), 403
 
-    # Single-device restriction: only for students (staff/admin can use multiple devices)
+    # Multi-device: allowed for every role like staff/admin. Flag it for proctoring.
     if user["role"] == "STUDENT":
         existing = query_one("SELECT COUNT(*) AS n FROM sessions WHERE user_id = ?", (user["id"],))
         if existing and existing["n"] > 0:
             security_event(
-                "LOGIN_BLOCKED",
+                "MULTIPLE_SESSION_DETECTED",
                 user["id"],
                 user["role"],
-                f"Already logged in — blocked sign-in from {portal} portal",
+                f"Student signed in on another device ({portal} portal)",
             )
-            return jsonify({"message": "You are already signed in on another device. Please log out there first."}), 409
 
     _record_success(user_id)
     token = create_session(user["id"], user["role"])
