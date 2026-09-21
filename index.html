@@ -7,6 +7,15 @@
     <meta name="author" content="Srinath Vatchavari Venkateshan — vvsrinath0@gmail.com — https://github.com/vvsrinath" />
     <meta name="description" content="Fresh Coders 2.0 - Euphoria 2026 examination platform for KARE University. Developed by Srinath Vatchavari Venkateshan." />
     <title>Fresh Coders 2.0 Platform</title>
+    <script>
+      try {
+        var theme = localStorage.getItem('fc_theme');
+        var dark =
+          theme === 'dark' ||
+          (!theme && window.matchMedia('(prefers-color-scheme: dark)').matches);
+        if (dark) document.documentElement.classList.add('dark');
+      } catch (e) {}
+    </script>
   </head>
   <body>
     <div id="root"></div>

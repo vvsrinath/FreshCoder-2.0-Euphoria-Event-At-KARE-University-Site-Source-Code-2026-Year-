@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import { ArrowRightIcon, MenuIcon, PhoneIcon, XIcon } from 'lucide-react';
 import { UniversityMark } from '../components/UniversityMark';
 import { GlobalFooter } from '../components/GlobalFooter';
+import { ThemeToggle } from '../components/ThemeToggle';
 import { brand, contact, convenors, staffCoordinators, studentCoordinators } from '../data/eventConfig';
 
 const AVATAR_TINTS = [
@@ -28,27 +29,28 @@ function initials(name: string) {
 export function Convenors() {
   const [mobileOpen, setMobileOpen] = useState(false);
   return (
-    <div className="min-h-screen bg-[#f5f5f7] text-slate-900 font-sans flex flex-col selection:bg-brand-500 selection:text-white">
+    <div className="min-h-screen bg-[#f5f5f7] text-slate-900 font-sans flex flex-col selection:bg-brand-500 selection:text-white dark:bg-[#161617] dark:text-slate-100">
       {/* ---------- Navigation ---------- */}
-      <header className="sticky top-0 z-40 bg-white/80 backdrop-blur-xl border-b border-slate-200/70">
+      <header className="sticky top-0 z-40 bg-white/80 backdrop-blur-xl border-b border-slate-200/70 dark:bg-navy-950/80 dark:border-white/10">
         <div className="mx-auto flex h-16 max-w-7xl items-center justify-between gap-4 px-5">
           <Link to="/" className="shrink-0" aria-label="Kalasalingam home">
             <UniversityMark tone="light" />
           </Link>
 
           <nav aria-label="Main" className="hidden items-center gap-6 lg:flex">
-            <Link to="/" className="text-sm font-medium text-slate-600 transition-colors hover:text-slate-900">
+            <Link to="/" className="text-sm font-medium text-slate-600 transition-colors hover:text-slate-900 dark:text-slate-300 dark:hover:text-white">
               Home
             </Link>
-            <Link to="/developers" className="text-sm font-medium text-slate-600 transition-colors hover:text-slate-900">
+            <Link to="/developers" className="text-sm font-medium text-slate-600 transition-colors hover:text-slate-900 dark:text-slate-300 dark:hover:text-white">
               Developers
             </Link>
-            <Link to="/convenors" className="text-sm font-semibold text-brand-600">
+            <Link to="/convenors" className="text-sm font-semibold text-brand-600 dark:text-brand-400">
               Convenors
             </Link>
           </nav>
 
           <div className="flex items-center gap-2">
+            <ThemeToggle />
             <Link
               to="/login?portal=STUDENT"
               className="inline-flex items-center justify-center rounded-full bg-slate-900 px-4 py-2 text-xs font-semibold text-white transition-all hover:bg-slate-700"
@@ -57,11 +59,11 @@ export function Convenors() {
             </Link>
             <Link
               to="/login?portal=STAFF"
-              className="hidden sm:inline-flex items-center justify-center rounded-full border border-slate-300 bg-white px-4 py-2 text-xs font-semibold text-slate-700 transition-all hover:border-slate-400 hover:bg-slate-50"
+              className="hidden sm:inline-flex items-center justify-center rounded-full border border-slate-300 bg-white px-4 py-2 text-xs font-semibold text-slate-700 transition-all hover:border-slate-400 hover:bg-slate-50 dark:border-white/15 dark:bg-white/10 dark:text-slate-200 dark:hover:border-white/25 dark:hover:bg-white/15"
             >
               Staff Portal
             </Link>
-            <button type="button" aria-label={mobileOpen ? 'Close menu' : 'Open menu'} aria-expanded={mobileOpen} onClick={() => setMobileOpen((v) => !v)} className="inline-flex h-9 w-9 items-center justify-center rounded-full border border-slate-200 bg-white text-slate-700 lg:hidden">
+            <button type="button" aria-label={mobileOpen ? 'Close menu' : 'Open menu'} aria-expanded={mobileOpen} onClick={() => setMobileOpen((v) => !v)} className="inline-flex h-9 w-9 items-center justify-center rounded-full border border-slate-200 bg-white text-slate-700 lg:hidden dark:border-white/15 dark:bg-white/10 dark:text-slate-200">
               {mobileOpen ? <XIcon className="h-4 w-4" /> : <MenuIcon className="h-4 w-4" />}
             </button>
           </div>
@@ -69,12 +71,12 @@ export function Convenors() {
         {mobileOpen && (
           <>
             <button type="button" aria-label="Close menu" onClick={() => setMobileOpen(false)} className="fixed inset-0 z-30 bg-slate-900/20 backdrop-blur-sm lg:hidden" />
-            <nav className="absolute inset-x-0 top-16 z-40 border-b border-slate-200 bg-white px-5 py-4 shadow-lg lg:hidden">
+            <nav className="absolute inset-x-0 top-16 z-40 border-b border-slate-200 bg-white px-5 py-4 shadow-lg lg:hidden dark:border-white/10 dark:bg-navy-950">
               <div className="flex flex-col gap-1">
-                <Link to="/" onClick={() => setMobileOpen(false)} className="rounded-xl px-3 py-2.5 text-sm font-medium text-slate-700 hover:bg-slate-50">Home</Link>
-                <Link to="/developers" onClick={() => setMobileOpen(false)} className="rounded-xl px-3 py-2.5 text-sm font-medium text-slate-700 hover:bg-slate-50">Developers</Link>
-                <Link to="/convenors" onClick={() => setMobileOpen(false)} className="rounded-xl bg-brand-50 px-3 py-2.5 text-sm font-semibold text-brand-700">Convenors</Link>
-                <Link to="/login?portal=STAFF" onClick={() => setMobileOpen(false)} className="mt-2 rounded-xl bg-slate-50 px-3 py-2.5 text-sm font-semibold text-slate-700 sm:hidden">Staff Portal</Link>
+                <Link to="/" onClick={() => setMobileOpen(false)} className="rounded-xl px-3 py-2.5 text-sm font-medium text-slate-700 hover:bg-slate-50 dark:text-slate-200 dark:hover:bg-white/10">Home</Link>
+                <Link to="/developers" onClick={() => setMobileOpen(false)} className="rounded-xl px-3 py-2.5 text-sm font-medium text-slate-700 hover:bg-slate-50 dark:text-slate-200 dark:hover:bg-white/10">Developers</Link>
+                <Link to="/convenors" onClick={() => setMobileOpen(false)} className="rounded-xl bg-brand-50 px-3 py-2.5 text-sm font-semibold text-brand-700 dark:bg-white/10 dark:text-brand-400">Convenors</Link>
+                <Link to="/login?portal=STAFF" onClick={() => setMobileOpen(false)} className="mt-2 rounded-xl bg-slate-50 px-3 py-2.5 text-sm font-semibold text-slate-700 sm:hidden dark:bg-white/10 dark:text-slate-200">Staff Portal</Link>
               </div>
             </nav>
           </>
@@ -97,11 +99,11 @@ export function Convenors() {
         <div className="mx-auto max-w-7xl px-5 py-16 text-center lg:py-20">
           <h1 className="mx-auto max-w-3xl text-4xl font-black leading-[1.05] tracking-tight sm:text-5xl lg:text-6xl">
             Convenors & Coordinators
-            <span className="block text-slate-900">
+            <span className="block text-slate-900 dark:text-white">
               running the event
             </span>
           </h1>
-          <p className="mx-auto mt-5 max-w-2xl text-base leading-relaxed text-slate-600 sm:text-lg">
+          <p className="mx-auto mt-5 max-w-2xl text-base leading-relaxed text-slate-600 sm:text-lg dark:text-slate-400">
             The faculty behind {brand.competition} — reach out to them for registration, event
             rules or official queries.
           </p>
@@ -115,7 +117,7 @@ export function Convenors() {
             {convenors.map((person, index) => (
               <article
                 key={person.name}
-                className="rounded-3xl bg-white p-6 shadow-sm ring-1 ring-slate-200 transition-shadow hover:shadow-md"
+                className="rounded-3xl bg-white p-6 shadow-sm ring-1 ring-slate-200 transition-shadow hover:shadow-md dark:bg-white/[0.05] dark:ring-white/10"
               >
                 <div className="flex items-center gap-4">
                   <span
@@ -124,12 +126,12 @@ export function Convenors() {
                     {initials(person.name)}
                   </span>
                   <div className="min-w-0">
-                    <h2 className="truncate text-sm font-black tracking-tight text-slate-900">
+                    <h2 className="truncate text-sm font-black tracking-tight text-slate-900 dark:text-white">
                       {person.name}
                     </h2>
-                    <p className="mt-0.5 text-xs font-semibold text-indigo-600">{person.role}</p>
+                    <p className="mt-0.5 text-xs font-semibold text-indigo-600 dark:text-brand-400">{person.role}</p>
                     {(person as unknown as { highlight?: string }).highlight && (
-                      <span className="mt-1 inline-flex rounded-full bg-slate-100 px-2 py-0.5 text-[10px] font-semibold text-slate-600 ring-1 ring-slate-200">
+                      <span className="mt-1 inline-flex rounded-full bg-slate-100 px-2 py-0.5 text-[10px] font-semibold text-slate-600 ring-1 ring-slate-200 dark:bg-white/10 dark:text-slate-300 dark:ring-white/15">
                         {(person as unknown as { highlight: string }).highlight === 'faculty-mentor' ? 'Developer Mentor' : 'Full Stack Developer'}
                       </span>
                     )}
@@ -137,7 +139,7 @@ export function Convenors() {
                 </div>
                 <div className="mt-4 flex flex-wrap gap-2">
                   {"email" in person && (person as unknown as { email: string }).email && (
-                    <a href={`mailto:${(person as unknown as { email: string }).email}`} className="inline-flex items-center gap-1.5 rounded-full bg-slate-100 px-3 py-1.5 text-xs font-semibold text-slate-700 hover:bg-slate-200">
+                    <a href={`mailto:${(person as unknown as { email: string }).email}`} className="inline-flex items-center gap-1.5 rounded-full bg-slate-100 px-3 py-1.5 text-xs font-semibold text-slate-700 hover:bg-slate-200 dark:bg-white/10 dark:text-slate-200 dark:hover:bg-white/15">
                       {(person as unknown as { email: string }).email}
                     </a>
                   )}
@@ -157,23 +159,23 @@ export function Convenors() {
           {/* Staff Coordinators — hidden if none */}
           {staffCoordinators.length > 0 && (
             <div className="mt-12">
-              <h2 className="text-xl font-black tracking-tight text-slate-900">Staff Coordinators</h2>
-              <p className="mt-1 text-sm text-slate-600">Faculty team coordinating the event.</p>
+              <h2 className="text-xl font-black tracking-tight text-slate-900 dark:text-white">Staff Coordinators</h2>
+              <p className="mt-1 text-sm text-slate-600 dark:text-slate-400">Faculty team coordinating the event.</p>
               <div className="mt-6 grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
                 {staffCoordinators.map((person, index) => (
-                  <article key={person.name} className="rounded-3xl bg-white p-6 shadow-sm ring-1 ring-slate-200 transition-shadow hover:shadow-md">
+                  <article key={person.name} className="rounded-3xl bg-white p-6 shadow-sm ring-1 ring-slate-200 transition-shadow hover:shadow-md dark:bg-white/[0.05] dark:ring-white/10">
                     <div className="flex items-center gap-4">
                       <span className={`inline-flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br text-base font-black text-white shadow-sm ${AVATAR_TINTS[index % AVATAR_TINTS.length]}`}>
                         {initials(person.name)}
                       </span>
                       <div className="min-w-0">
-                        <h3 className="truncate text-sm font-black tracking-tight text-slate-900">{person.name}</h3>
-<p className="mt-0.5 text-xs font-semibold text-slate-500">{person.role}</p>
+                        <h3 className="truncate text-sm font-black tracking-tight text-slate-900 dark:text-white">{person.name}</h3>
+<p className="mt-0.5 text-xs font-semibold text-slate-500 dark:text-slate-400">{person.role}</p>
                       </div>
                     </div>
                     <div className="mt-4 flex flex-wrap gap-2">
                       {"phone" in person && (person as unknown as { phone: string }).phone && (
-                        <a href={`tel:${(person as unknown as { phone: string }).phone.replace(/\s/g, '')}`} className="inline-flex items-center gap-1.5 rounded-full bg-slate-100 px-3 py-1.5 text-xs font-semibold text-slate-700 hover:bg-slate-200">
+                        <a href={`tel:${(person as unknown as { phone: string }).phone.replace(/\s/g, '')}`} className="inline-flex items-center gap-1.5 rounded-full bg-slate-100 px-3 py-1.5 text-xs font-semibold text-slate-700 hover:bg-slate-200 dark:bg-white/10 dark:text-slate-200 dark:hover:bg-white/15">
                           <PhoneIcon className="h-3.5 w-3.5" /> {(person as unknown as { phone: string }).phone}
                         </a>
                       )}
@@ -186,28 +188,28 @@ export function Convenors() {
 
           {/* Student Coordinators */}
           <div className="mt-10">
-            <h2 className="text-xl font-black tracking-tight text-slate-900">Student Coordinators</h2>
-            <p className="mt-1 text-sm text-slate-600">Student team supporting the event.</p>
+            <h2 className="text-xl font-black tracking-tight text-slate-900 dark:text-white">Student Coordinators</h2>
+            <p className="mt-1 text-sm text-slate-600 dark:text-slate-400">Student team supporting the event.</p>
             <div className="mt-6 grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
               {studentCoordinators.map((person, index) => (
-                <article key={person.name} className="rounded-3xl bg-white p-6 shadow-sm ring-1 ring-slate-200 transition-shadow hover:shadow-md">
+                <article key={person.name} className="rounded-3xl bg-white p-6 shadow-sm ring-1 ring-slate-200 transition-shadow hover:shadow-md dark:bg-white/[0.05] dark:ring-white/10">
                   <div className="flex items-center gap-4">
                     <span className={`inline-flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br text-base font-black text-white shadow-sm ${AVATAR_TINTS[(index + 2) % AVATAR_TINTS.length]}`}>
                       {initials(person.name)}
                     </span>
                     <div className="min-w-0">
-                      <h3 className="truncate text-sm font-black tracking-tight text-slate-900">{person.name}</h3>
-                      <p className="mt-0.5 text-xs font-semibold text-slate-500">{person.role}</p>
+                      <h3 className="truncate text-sm font-black tracking-tight text-slate-900 dark:text-white">{person.name}</h3>
+                      <p className="mt-0.5 text-xs font-semibold text-slate-500 dark:text-slate-400">{person.role}</p>
                     </div>
                   </div>
                   <div className="mt-4 flex flex-wrap gap-2">
                     {"email" in person && (person as unknown as { email: string }).email && (
-                      <a href={`mailto:${(person as unknown as { email: string }).email}`} className="inline-flex items-center gap-1.5 rounded-full bg-slate-100 px-3 py-1.5 text-xs font-semibold text-slate-700 hover:bg-slate-200">
+                      <a href={`mailto:${(person as unknown as { email: string }).email}`} className="inline-flex items-center gap-1.5 rounded-full bg-slate-100 px-3 py-1.5 text-xs font-semibold text-slate-700 hover:bg-slate-200 dark:bg-white/10 dark:text-slate-200 dark:hover:bg-white/15">
                         {(person as unknown as { email: string }).email}
                       </a>
                     )}
                     {"phone" in person && (person as unknown as { phone: string }).phone && (
-                      <a href={`tel:${(person as unknown as { phone: string }).phone.replace(/\s/g, '')}`} className="inline-flex items-center gap-1.5 rounded-full bg-slate-100 px-3 py-1.5 text-xs font-semibold text-slate-700 hover:bg-slate-200">
+                      <a href={`tel:${(person as unknown as { phone: string }).phone.replace(/\s/g, '')}`} className="inline-flex items-center gap-1.5 rounded-full bg-slate-100 px-3 py-1.5 text-xs font-semibold text-slate-700 hover:bg-slate-200 dark:bg-white/10 dark:text-slate-200 dark:hover:bg-white/15">
                         <PhoneIcon className="h-3.5 w-3.5" /> {(person as unknown as { phone: string }).phone}
                       </a>
                     )}

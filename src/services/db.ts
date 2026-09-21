@@ -243,8 +243,8 @@ function buildStore(): Store {
     id: uid('AL'),
     actor: 'STAFF001',
     role: 'STAFF' as Role,
-    action: 'Published question set',
-    target: 'Question Bank',
+    action: 'Reviewed shared question set',
+    target: 'Question Library',
     metadata: `${questions.length} active questions`,
     createdAt: new Date(Date.now() - 1000 * 60 * 40).toISOString()
   }];

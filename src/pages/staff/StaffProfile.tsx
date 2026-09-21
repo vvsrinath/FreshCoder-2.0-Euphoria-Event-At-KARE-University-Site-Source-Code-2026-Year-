@@ -9,6 +9,7 @@ import { TextField } from '../../components/TextField';
 import { StaffNavFooter, staffNav } from './staffNav';
 import { useAuth } from '../../contexts/AuthContext';
 import { api } from '../../services/api';
+import { validatePassword } from '../../utils/password';
 
 export function StaffProfile() {
   const navigate = useNavigate();
@@ -23,11 +24,12 @@ export function StaffProfile() {
   }, []);
 
   const mismatch = next !== confirm && confirm.length > 0;
-  const weak = next.length > 0 && next.length < 8;
+  const pwError = next.length > 0 ? validatePassword(next) : null;
+  const weak = pwError !== null;
 
   const save = async () => {
-    if (weak) {
-      toast.error('New password must be at least 8 characters.');
+    if (pwError) {
+      toast.error(pwError);
       return;
     }
     if (mismatch) {
@@ -84,7 +86,7 @@ export function StaffProfile() {
         <Card>
           <CardHeader
             title="Change password"
-            description="For your security, use a unique password with at least 8 characters."
+            description="For your security, use a unique password with at least 8 characters including a letter and a number."
           />
           <div className="space-y-4 p-5">
             <TextField
@@ -99,7 +101,7 @@ export function StaffProfile() {
               type="password"
               value={next}
               onChange={(e) => setNext(e.target.value)}
-              error={weak ? 'Must be at least 8 characters.' : undefined}
+              error={pwError !== null ? (pwError ?? undefined) : undefined}
               autoComplete="new-password"
             />
             <TextField

@@ -14,6 +14,10 @@ from database import execute, query_one
 
 NOW = datetime.now(timezone.utc).isoformat()
 
+if os.environ.get("DEMO_SEED", "1").strip().lower() in ("0", "false", "no"):
+    print("DEMO_SEED is disabled — skipping demo data. Exiting.")
+    raise SystemExit(0)
+
 ADMIN_PASSWORD = os.environ.get("SEED_ADMIN_PASSWORD", "admin@2026")
 STAFF_PASSWORD = os.environ.get("SEED_STAFF_PASSWORD", "staff@2026")
 STUDENT_PASSWORD = os.environ.get("SEED_STUDENT_PASSWORD", "student@2026")

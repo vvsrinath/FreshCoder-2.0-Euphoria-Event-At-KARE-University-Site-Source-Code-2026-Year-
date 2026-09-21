@@ -30,7 +30,7 @@ export function TextField({ label, hint, error, icon, className, id, ...rest }: 
           className={cn(
             'h-10 w-full rounded-lg border bg-white px-3 text-sm text-navy-900 placeholder:text-slate-400',
             'transition-colors duration-150 ease-out focus:border-brand-500 focus:outline-none focus:ring-2 focus:ring-brand-500/25',
-            icon && 'pl-9',
+            (icon ? 'pl-9' : ''),
             error ? 'border-red-400' : 'border-black/10',
             className
           )} />

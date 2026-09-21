@@ -31,7 +31,7 @@ export function SelectField({
       {label ?
       <label
         htmlFor={fieldId}
-        className={cn('mb-1.5 block text-xs font-medium text-navy-700', srLabel && 'sr-only')}>
+        className={cn('mb-1.5 block text-xs font-medium text-navy-700 dark:text-slate-300', srLabel && 'sr-only')}>
         
           {label}
         </label> :
@@ -40,9 +40,9 @@ export function SelectField({
         id={fieldId}
         {...rest}
         className={cn(
-          'h-10 w-full rounded-lg border bg-white px-3 text-sm text-navy-900',
+          'h-10 w-full rounded-lg border bg-white px-3 text-sm text-navy-900 dark:bg-navy-900 dark:text-white',
           'transition-colors duration-150 ease-out focus:border-brand-500 focus:outline-none focus:ring-2 focus:ring-brand-500/25',
-          error ? 'border-red-400' : 'border-black/10',
+          error ? 'border-red-400' : 'border-black/10 dark:border-white/15',
           className
         )}>
         

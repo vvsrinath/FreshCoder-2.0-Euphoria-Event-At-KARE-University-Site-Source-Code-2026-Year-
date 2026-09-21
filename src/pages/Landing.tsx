@@ -17,6 +17,7 @@ import {
 } from 'lucide-react';
 import { UniversityMark } from '../components/UniversityMark';
 import { GlobalFooter } from '../components/GlobalFooter';
+import { ThemeToggle } from '../components/ThemeToggle';
 import { brand, eventConfig, guidelines } from '../data/eventConfig';
 
 const HERO_IMAGE = "/landing-hero.jpg";
@@ -37,9 +38,9 @@ const NAV_LINKS: ReadonlyArray<
 export function Landing() {
   const [mobileOpen, setMobileOpen] = useState(false);
   return (
-    <div className="min-h-screen bg-[#f5f5f7] text-slate-900 font-sans flex flex-col selection:bg-brand-500 selection:text-white">
+    <div className="min-h-screen bg-[#f5f5f7] text-slate-900 font-sans flex flex-col selection:bg-brand-500 selection:text-white dark:bg-[#161617] dark:text-slate-100">
       {/* ---------- Navigation ---------- */}
-      <header className="sticky top-0 z-40 bg-white/80 backdrop-blur-xl border-b border-black/10">
+      <header className="sticky top-0 z-40 bg-white/80 backdrop-blur-xl border-b border-black/10 dark:bg-navy-950/80 dark:border-white/10">
         <div className="mx-auto flex h-16 max-w-7xl items-center justify-between gap-4 px-5">
           <Link to="/" className="shrink-0" aria-label="Kalasalingam home">
             <UniversityMark tone="light" />
@@ -51,7 +52,7 @@ export function Landing() {
                 <Link
                   key={link.to}
                   to={link.to}
-                  className="text-sm font-medium text-slate-600 transition-colors hover:text-slate-900"
+                  className="text-sm font-medium text-slate-600 transition-colors hover:text-slate-900 dark:text-slate-300 dark:hover:text-white"
                 >
                   {link.label}
                 </Link>
@@ -59,7 +60,7 @@ export function Landing() {
                 <a
                   key={link.href}
                   href={link.href}
-                  className="text-sm font-medium text-slate-600 transition-colors hover:text-slate-900"
+                  className="text-sm font-medium text-slate-600 transition-colors hover:text-slate-900 dark:text-slate-300 dark:hover:text-white"
                 >
                   {link.label}
                 </a>
@@ -68,6 +69,7 @@ export function Landing() {
           </nav>
 
           <div className="flex items-center gap-2">
+            <ThemeToggle />
             <Link
               to="/login?portal=STUDENT"
               className="inline-flex items-center justify-center rounded-full bg-brand-500 px-4 py-2 text-xs font-semibold text-white transition-all hover:bg-brand-600"
@@ -76,7 +78,7 @@ export function Landing() {
             </Link>
             <Link
               to="/login?portal=STAFF"
-              className="hidden sm:inline-flex items-center justify-center rounded-full border border-slate-300 bg-white px-4 py-2 text-xs font-semibold text-slate-700 transition-all hover:border-slate-400 hover:bg-slate-50"
+              className="hidden sm:inline-flex items-center justify-center rounded-full border border-slate-300 bg-white px-4 py-2 text-xs font-semibold text-slate-700 transition-all hover:border-slate-400 hover:bg-slate-50 dark:border-white/15 dark:bg-white/10 dark:text-slate-200 dark:hover:border-white/25 dark:hover:bg-white/15"
             >
               Staff Portal
             </Link>
@@ -85,7 +87,7 @@ export function Landing() {
               aria-label={mobileOpen ? 'Close menu' : 'Open menu'}
               aria-expanded={mobileOpen}
               onClick={() => setMobileOpen((v) => !v)}
-              className="inline-flex h-9 w-9 items-center justify-center rounded-full border border-slate-200 bg-white text-slate-700 lg:hidden"
+              className="inline-flex h-9 w-9 items-center justify-center rounded-full border border-slate-200 bg-white text-slate-700 lg:hidden dark:border-white/15 dark:bg-white/10 dark:text-slate-200"
             >
               {mobileOpen ? <XIcon className="h-4 w-4" /> : <MenuIcon className="h-4 w-4" />}
             </button>
@@ -95,11 +97,11 @@ export function Landing() {
         {mobileOpen && (
           <>
             <button type="button" aria-label="Close menu" onClick={() => setMobileOpen(false)} className="fixed inset-0 z-30 bg-slate-900/20 backdrop-blur-sm lg:hidden" />
-            <nav className="absolute inset-x-0 top-16 z-40 border-b border-slate-200 bg-white px-5 py-4 shadow-lg lg:hidden">
+            <nav className="absolute inset-x-0 top-16 z-40 border-b border-slate-200 bg-white px-5 py-4 shadow-lg lg:hidden dark:border-white/10 dark:bg-navy-950">
               <div className="flex flex-col gap-1">
                 {NAV_LINKS.map((link) =>
                   'to' in link ? (
-                    <Link key={link.to} to={link.to} onClick={() => setMobileOpen(false)} className="rounded-xl px-3 py-2.5 text-sm font-medium text-slate-700 hover:bg-slate-50">
+                    <Link key={link.to} to={link.to} onClick={() => setMobileOpen(false)} className="rounded-xl px-3 py-2.5 text-sm font-medium text-slate-700 hover:bg-slate-50 dark:text-slate-200 dark:hover:bg-white/10">
                       {link.label}
                     </Link>
                   ) : (
@@ -108,7 +110,7 @@ export function Landing() {
                     </a>
                   )
                 )}
-                <Link to="/login?portal=STAFF" onClick={() => setMobileOpen(false)} className="mt-2 rounded-xl bg-slate-50 px-3 py-2.5 text-sm font-semibold text-slate-700 sm:hidden">
+                <Link to="/login?portal=STAFF" onClick={() => setMobileOpen(false)} className="mt-2 rounded-xl bg-slate-50 px-3 py-2.5 text-sm font-semibold text-slate-700 sm:hidden dark:bg-white/10 dark:text-slate-200">
                   Staff Portal
                 </Link>
               </div>
@@ -184,7 +186,7 @@ export function Landing() {
       </section>
 
       {/* ---------- Quick facts ---------- */}
-      <section className="border-y border-slate-200 bg-white">
+      <section className="border-y border-slate-200 bg-white dark:border-white/10 dark:bg-white/[0.04]">
         <div className="mx-auto grid max-w-7xl grid-cols-2 gap-px px-5 py-8 md:grid-cols-4">
           {[
             { icon: AwardIcon, label: 'Prize pool', value: eventConfig.prizePool },
@@ -193,11 +195,11 @@ export function Landing() {
             { icon: ShieldCheckIcon, label: 'Proctored', value: 'Live, monitored exams' },
           ].map(({ icon: Icon, label, value }) => (
             <div key={label} className="flex items-center gap-3 px-4 py-3" >
-              <span className="inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-black/5 text-slate-500">
+              <span className="inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-black/5 text-slate-500 dark:bg-white/10 dark:text-slate-400">
                 <Icon className="h-5 w-5" />
               </span>
               <div>
-                <p className="text-sm font-semibold text-navy-900">{value}</p>
+                <p className="text-sm font-semibold text-navy-900 dark:text-white">{value}</p>
                 <p className="text-xs text-slate-500">{label}</p>
               </div>
             </div>
@@ -214,27 +216,27 @@ export function Landing() {
               alt={`${brand.competition} at ${eventConfig.name}`}
               className="col-span-2 aspect-[16/9] w-full rounded-2xl object-cover shadow-md"
             />
-            <div className="flex items-center justify-center rounded-2xl bg-white p-6 ring-1 ring-slate-200 shadow-md">
+            <div className="flex items-center justify-center rounded-2xl bg-white p-6 ring-1 ring-slate-200 shadow-md dark:bg-white/[0.06] dark:ring-white/10">
               <img
                 src={EUPHORIA_LOGO}
                 alt={`${eventConfig.name} logo`}
                 className="max-h-28 w-auto object-contain"
               />
             </div>
-            <div className="flex flex-col justify-center rounded-2xl bg-slate-50 p-5 ring-1 ring-black/5">
+            <div className="flex flex-col justify-center rounded-2xl bg-slate-50 p-5 ring-1 ring-black/5 dark:bg-white/[0.06] dark:ring-white/10">
               <p className="text-xs font-bold uppercase tracking-wider text-slate-400">Our ethos</p>
-              <p className="mt-1 text-sm font-semibold leading-snug text-navy-900">
+              <p className="mt-1 text-sm font-semibold leading-snug text-navy-900 dark:text-white">
                 "{brand.motto}"
               </p>
             </div>
           </div>
 
           <div>
-            <p className="text-xs font-bold uppercase tracking-[0.2em] text-brand-600">About the exam</p>
-            <h2 className="mt-3 text-3xl font-semibold tracking-tight text-navy-900 sm:text-4xl">
+            <p className="text-xs font-bold uppercase tracking-[0.2em] text-brand-600 dark:text-brand-400">About the exam</p>
+            <h2 className="mt-3 text-3xl font-semibold tracking-tight text-navy-900 sm:text-4xl dark:text-white">
               First year, first try — on a platform we built ourselves.
             </h2>
-            <p className="mt-5 text-base leading-relaxed text-slate-600">
+            <p className="mt-5 text-base leading-relaxed text-slate-600 dark:text-slate-300">
               {eventConfig.name} brings together every first-year student for a morning of coding,
               debugging and logic. {brand.competition} runs it on an examination platform designed
               for exactly this room: timed, proctored and graded automatically as you finish.
@@ -245,7 +247,7 @@ export function Landing() {
                 'Live proctoring — leaving fullscreen or switching tabs is recorded, not punished blindly',
                 'A results screen that shows where you gained and lost marks',
               ].map((line) => (
-                <li key={line} className="flex items-start gap-3 text-sm text-slate-700">
+                <li key={line} className="flex items-start gap-3 text-sm text-slate-700 dark:text-slate-300">
                   <CheckCircle2Icon className="mt-0.5 h-5 w-5 shrink-0 text-brand-500" />
                   <span>{line}</span>
                 </li>
@@ -265,11 +267,11 @@ export function Landing() {
       </section>
 
       {/* ---------- Event: schedule + guidelines ---------- */}
-      <section id="event" className="bg-white py-20">
+      <section id="event" className="bg-white py-20 dark:bg-white/[0.04]">
         <div className="mx-auto max-w-7xl px-5">
           <div className="max-w-2xl">
-            <p className="text-xs font-bold uppercase tracking-[0.2em] text-brand-600">Event day</p>
-            <h2 className="mt-3 text-3xl font-semibold tracking-tight text-navy-900 sm:text-4xl">
+            <p className="text-xs font-bold uppercase tracking-[0.2em] text-brand-600 dark:text-brand-400">Event day</p>
+            <h2 className="mt-3 text-3xl font-semibold tracking-tight text-navy-900 sm:text-4xl dark:text-white">
               {eventConfig.date}, in the 11th Block
             </h2>
           </div>
@@ -277,8 +279,8 @@ export function Landing() {
           <div className="mt-10 grid gap-8 lg:grid-cols-2">
             {/* Schedule */}
             <div>
-              <h3 className="text-sm font-bold uppercase tracking-wider text-slate-500">Schedule</h3>
-              <ol className="mt-5 space-y-5 border-l-2 border-black/10 pl-5">
+              <h3 className="text-sm font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">Schedule</h3>
+              <ol className="mt-5 space-y-5 border-l-2 border-black/10 pl-5 dark:border-white/15">
                 {[
                   { time: '09:00 AM', title: 'Reporting & verification', desc: 'System check at Room 11506 & 11507' },
                   { time: '09:30 AM', title: 'Python fundamentals', desc: 'Official test starts simultaneously for everyone' },
@@ -286,10 +288,10 @@ export function Landing() {
                   { time: '01:00 PM', title: 'Results & closing', desc: 'Evaluation wraps up and winners are announced' },
                 ].map((item) => (
                   <li key={item.time} className="relative">
-                    <span aria-hidden className="absolute -left-[27px] top-1 h-3 w-3 rounded-full border-2 border-brand-500 bg-white" />
-                    <p className="text-sm font-semibold text-brand-600">{item.time}</p>
-                    <p className="mt-0.5 text-sm font-semibold text-navy-900">{item.title}</p>
-                    <p className="mt-0.5 text-sm text-slate-500">{item.desc}</p>
+                    <span aria-hidden className="absolute -left-[27px] top-1 h-3 w-3 rounded-full border-2 border-brand-500 bg-white dark:bg-navy-950" />
+                    <p className="text-sm font-semibold text-brand-600 dark:text-brand-400">{item.time}</p>
+                    <p className="mt-0.5 text-sm font-semibold text-navy-900 dark:text-white">{item.title}</p>
+                    <p className="mt-0.5 text-sm text-slate-500 dark:text-slate-400">{item.desc}</p>
                   </li>
                 ))}
               </ol>
@@ -297,16 +299,16 @@ export function Landing() {
 
             {/* Guidelines */}
             <div id="guidelines">
-              <h3 className="text-sm font-bold uppercase tracking-wider text-slate-500">Guidelines</h3>
-              <ul className="mt-5 space-y-3 rounded-2xl bg-white p-6 ring-1 ring-black/5 shadow-sm">
+              <h3 className="text-sm font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">Guidelines</h3>
+              <ul className="mt-5 space-y-3 rounded-2xl bg-white p-6 ring-1 ring-black/5 shadow-sm dark:bg-white/[0.06] dark:ring-white/10">
                 {guidelines.map((line) => (
-                  <li key={line} className="flex items-start gap-3 text-sm text-slate-700">
+<li key={line} className="flex items-start gap-3 text-sm text-slate-700 dark:text-slate-300">
                     <CheckCircle2Icon className="mt-0.5 h-5 w-5 shrink-0 text-brand-500" />
                     <span>{line}</span>
                   </li>
                 ))}
               </ul>
-              <p className="mt-4 flex items-start gap-2 rounded-xl bg-slate-50 p-4 text-xs leading-relaxed text-slate-600 ring-1 ring-inset ring-black/5">
+              <p className="mt-4 flex items-start gap-2 rounded-xl bg-slate-50 p-4 text-xs leading-relaxed text-slate-600 ring-1 ring-inset ring-black/5 dark:bg-white/[0.06] dark:text-slate-400 dark:ring-white/10">
                 <Code2Icon className="mt-0.5 h-4 w-4 shrink-0 text-brand-500" />
                 Need help on the day? Reach any examination staff in the room, or contact the team
                 below before the event.

@@ -117,7 +117,7 @@ export const convenors = [
   },
 ] as const;
 
-export const staffCoordinators = [] as const;
+export const staffCoordinators: { name: string; role: string; phone?: string }[] = [];
 
 export const studentCoordinators = [
   {

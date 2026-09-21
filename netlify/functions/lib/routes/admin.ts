@@ -5,16 +5,13 @@ import { execute, query, queryOne, str, num, bool, audit, type Row } from "../db
 import { hashPassword, revokeUserSessions } from "../auth";
 import { RouteCtx, RouteDef } from "../router";
 import { utcNow } from "../utils";
+import { passwordError } from "../policy";
 
 const SUPER_ADMIN = ["SUPER_ADMIN"];
-const MIN_PASSWORD_LENGTH = 8;
 const MAX_IMPORT_ROWS = 5000;
 
 function validatePassword(password: string): string {
-  if (!password || password.length < MIN_PASSWORD_LENGTH) {
-    return `Password must be at least ${MIN_PASSWORD_LENGTH} characters long.`;
-  }
-  return "";
+  return passwordError(password);
 }
 
 function userToJson(row: Row): Record<string, unknown> {

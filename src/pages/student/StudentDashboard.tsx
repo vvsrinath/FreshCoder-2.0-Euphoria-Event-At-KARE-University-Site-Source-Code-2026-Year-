@@ -17,6 +17,7 @@ import { LoadingState } from '../../components/LoadingState';
 import { ErrorState } from '../../components/ErrorState';
 import { studentNav } from './studentNav';
 import { api } from '../../services/api';
+import { useLive } from '../../hooks/useLive';
 import { eventConfig, guidelines } from '../../data/eventConfig';
 import { formatDateTime } from '../../utils/format';
 
@@ -46,12 +47,10 @@ export function StudentDashboard() {
     }
   }, []);
 
+  const { mode } = useLive({ intervalMs: POLL_INTERVAL_MS, onEvent: () => load(false), channel: 'student-dashboard' });
+
   useEffect(() => {
     load(true);
-    const id = window.setInterval(() => {
-      load(false);
-    }, POLL_INTERVAL_MS);
-    return () => window.clearInterval(id);
   }, [load]);
 
   const studentName = data?.student?.name ?? 'Student';
@@ -103,7 +102,7 @@ export function StudentDashboard() {
                 Eligible Participant
               </span>
               <span className="inline-flex items-center gap-1.5 rounded-full border border-black/10 bg-white px-3.5 py-1.5 text-xs font-medium text-slate-500 shadow-sm">
-                Auto-refreshes every 15s
+                {mode === 'live' ? 'Live · instant updates' : 'Auto-refreshes every 15s'}
               </span>
             </div>
           </div>

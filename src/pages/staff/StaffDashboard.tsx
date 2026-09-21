@@ -17,6 +17,7 @@ import { StatCard } from '../../components/StatCard';
 import { StaffNavFooter, staffNav } from './staffNav';
 import { useAuth } from '../../contexts/AuthContext';
 import { api } from '../../services/api';
+import { useLive } from '../../hooks/useLive';
 import type { Test } from '../../types';
 
 function formatWhen(value: string | null | undefined): string {
@@ -53,15 +54,23 @@ export function StaffDashboard() {
       .catch((err) => setError(err.message));
   }, []);
 
-  useEffect(() => {
+  const refreshTests = useCallback(() => {
     api.tests().then((res) => setTests(res.tests)).catch(() => undefined);
-    load();
-    const id = window.setInterval(() => {
-      api.tests().then((res) => setTests(res.tests)).catch(() => undefined);
+  }, []);
+
+  const { mode } = useLive({
+    intervalMs: 15000,
+    onEvent: () => {
       load();
-    }, 15000);
-    return () => window.clearInterval(id);
-  }, [load]);
+      refreshTests();
+    },
+    channel: 'staff-dashboard',
+  });
+
+  useEffect(() => {
+    refreshTests();
+    load();
+  }, [load, refreshTests]);
 
   useEffect(() => {
     if (!runningTestId) return;
@@ -103,7 +112,9 @@ export function StaffDashboard() {
                 Welcome, {user?.name?.split(' ')[0] || 'Staff'}
               </h1>
               <p className="text-xs sm:text-sm text-slate-500 font-medium mt-1">
-                Live examination controls and activity across Fresh Coders 2.0 – Euphoria 2026.
+                {mode === 'live'
+                  ? 'Live dashboard — changes appear instantly.'
+                  : 'Live examination controls and activity across Fresh Coders 2.0 – Euphoria 2026.'}
               </p>
             </div>
             <Link

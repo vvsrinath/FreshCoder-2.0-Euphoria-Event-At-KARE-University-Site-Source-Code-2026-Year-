@@ -12,6 +12,7 @@ import {
 } from "../auth";
 import { RouteCtx, RouteDef } from "../router";
 import { utcNow } from "../utils";
+import { passwordError } from "../policy";
 
 const PORTAL_ROLES: Record<string, string[]> = {
   STUDENT: ["STUDENT"],
@@ -135,7 +136,8 @@ async function me(ctx: RouteCtx): Promise<HttpResponse> {
 async function changePassword(ctx: RouteCtx): Promise<HttpResponse> {
   const current = String(ctx.body["currentPassword"] ?? "");
   const next = String(ctx.body["newPassword"] ?? "");
-  if (next.length < 8) throw new ApiError(400, "New password must be at least 8 characters long.");
+  const passwordMessage = passwordError(next);
+  if (passwordMessage) throw new ApiError(400, passwordMessage);
   const row = await queryOne("SELECT password_hash FROM users WHERE id = ?", [ctx.user.id]);
   if (row === undefined) throw new ApiError(404, "Account not found.");
   if (!verifyPassword(current, str(row["password_hash"]))) {

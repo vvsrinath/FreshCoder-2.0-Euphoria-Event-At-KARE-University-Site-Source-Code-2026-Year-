@@ -7,6 +7,7 @@ import { ErrorState } from '../../components/ErrorState';
 import { EmptyState } from '../../components/EmptyState';
 import { adminNav } from './adminNav';
 import { api } from '../../services/api';
+import { useLive } from '../../hooks/useLive';
 import { relativeTime, titleCase } from '../../utils/format';
 import { eventConfig } from '../../data/eventConfig';
 
@@ -37,12 +38,10 @@ export function AdminDashboard() {
     }
   }, []);
 
+  const { mode } = useLive({ intervalMs: POLL_INTERVAL_MS, onEvent: () => load(false), channel: 'admin-dashboard' });
+
   useEffect(() => {
     load(true);
-    const id = window.setInterval(() => {
-      load(false);
-    }, POLL_INTERVAL_MS);
-    return () => window.clearInterval(id);
   }, [load]);
 
   const lastUpdatedLabel = lastUpdated
@@ -67,7 +66,7 @@ export function AdminDashboard() {
                 <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-500 opacity-60" />
                 <span className="relative inline-flex h-2 w-2 rounded-full bg-emerald-500" />
               </span>
-              Live · auto-refreshes every 15s · updated {lastUpdatedLabel}
+              {mode === 'live' ? `Live · instant sync · updated ${lastUpdatedLabel}` : `Live · auto-refreshes every 15s · updated ${lastUpdatedLabel}`}
             </div>
           </div>
 

@@ -1,16 +1,19 @@
 import React, { useState } from 'react';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { EyeIcon, EyeOffIcon, KeyRoundIcon, LockIcon, UserIcon, ArrowRightIcon } from 'lucide-react';
-import { Button } from '../components/Button';
 import { TextField } from '../components/TextField';
 import { UniversityMark } from '../components/UniversityMark';
 import { GlobalFooter } from '../components/GlobalFooter';
 import { useAuth } from '../contexts/AuthContext';
-import { brand, eventConfig } from '../data/eventConfig';
+import { brand } from '../data/eventConfig';
 import { demoCredentials } from '../data/seedUsers';
 import { cn } from '../utils/cn';
 
-const CAMPUS_IMAGE = "/landing-hero.jpg";
+const CAMPUS_IMAGE = '/landing-hero.jpg';
+
+/** Demo quick-fill accounts are hidden in production unless explicitly enabled. */
+const env = (import.meta as unknown as { env?: Record<string, string> }).env ?? {};
+const SHOW_DEMO = env.MODE !== 'production' || env.VITE_SHOW_DEMO === 'true';
 
 type Portal = 'STUDENT' | 'STAFF' | 'ADMIN';
 
@@ -58,7 +61,7 @@ export function Login() {
   };
 
   return (
-    <div className="min-h-screen w-full bg-[#f8fafc] flex flex-col justify-between">
+    <div className="min-h-screen w-full bg-[#f8fafc] flex flex-col justify-between dark:bg-[#161617]">
       <div className="grid min-h-[calc(100vh-80px)] w-full lg:grid-cols-[1.1fr_1.2fr]">
         {/* Left Visual Column */}
         <aside className="relative hidden overflow-hidden bg-[#0a1026] lg:flex lg:flex-col justify-between p-10 lg:p-14 text-white">
@@ -107,17 +110,17 @@ export function Login() {
             </div>
 
             {/* Elevated Auth Card */}
-            <div className="rounded-3xl border border-black/10 bg-white p-8 sm:p-10 shadow-panel">
-              <h1 className="text-center text-2xl sm:text-3xl font-semibold text-navy-900 tracking-tight">
+            <div className="rounded-3xl border border-black/10 bg-white p-8 sm:p-10 shadow-panel dark:border-white/10 dark:bg-white/[0.05]">
+              <h1 className="text-center text-2xl sm:text-3xl font-semibold text-navy-900 tracking-tight dark:text-white">
                 Welcome Back
               </h1>
-              <p className="mt-1.5 text-center text-sm text-slate-500 font-medium">
+              <p className="mt-1.5 text-center text-sm text-slate-500 font-medium dark:text-slate-400">
                 Sign in to the Fresh Coders 2.0 portal
               </p>
 
               {/* Role Switcher Tabs */}
               <div
-                className="mt-7 grid grid-cols-3 gap-1 rounded-full bg-black/[0.05] p-1"
+                className="mt-7 grid grid-cols-3 gap-1 rounded-full bg-black/[0.05] p-1 dark:bg-white/10"
                 role="tablist"
               >
                 {portals.map((item) => (
@@ -133,8 +136,8 @@ export function Login() {
                     className={cn(
                       'rounded-full py-2 text-xs sm:text-sm font-medium transition-all duration-150',
                       portal === item.key
-                        ? 'bg-white text-navy-900 shadow-sm'
-                        : 'text-slate-500 hover:text-navy-900'
+                        ? 'bg-white text-navy-900 shadow-sm dark:bg-white/15 dark:text-white'
+                        : 'text-slate-500 hover:text-navy-900 dark:text-slate-400 dark:hover:text-white'
                     )}
                   >
                     {item.label}
@@ -199,8 +202,8 @@ export function Login() {
               </p>
 
               {/* Motivational Quote Box at bottom of card */}
-              <div className="mt-6 rounded-2xl border border-slate-100 bg-slate-50/80 p-4 text-center">
-                <p className="text-xs italic text-slate-700 font-medium">
+              <div className="mt-6 rounded-2xl border border-slate-100 bg-slate-50/80 p-4 text-center dark:border-white/10 dark:bg-white/[0.06]">
+                <p className="text-xs italic text-slate-700 font-medium dark:text-slate-300">
                   "{brand.quote}"
                 </p>
                 <p className="mt-1 text-[10px] uppercase font-bold tracking-wider text-slate-400">
@@ -210,7 +213,8 @@ export function Login() {
             </div>
 
             {/* Dev Demo Quick-Fill Accounts */}
-            <div className="rounded-2xl border border-dashed border-slate-300 bg-white/70 p-4 shadow-sm">
+            {SHOW_DEMO ? (
+            <div className="rounded-2xl border border-dashed border-slate-300 bg-white/70 p-4 shadow-sm dark:border-white/15 dark:bg-white/[0.06]">
               <p className="flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-slate-500">
                 <KeyRoundIcon className="h-3.5 w-3.5 text-brand-500" /> Demo Quick-Fill Credentials
               </p>
@@ -220,17 +224,18 @@ export function Login() {
                     key={cred.id}
                     type="button"
                     onClick={() => handleQuickFill(cred.id, cred.password)}
-                    className="flex flex-col items-center rounded-lg border border-black/10 bg-white p-2 text-center transition-all hover:border-brand-400 hover:bg-brand-50"
+                    className="flex flex-col items-center rounded-lg border border-black/10 bg-white p-2 text-center transition-all hover:border-brand-400 hover:bg-brand-50 dark:border-white/15 dark:bg-white/[0.04] dark:hover:border-brand-400/50 dark:hover:bg-brand-500/10"
                   >
-                    <span className="text-[11px] font-bold text-navy-800">{cred.label}</span>
+                    <span className="text-[11px] font-bold text-navy-800 dark:text-slate-200">{cred.label}</span>
                     <span className="font-mono text-[10px] text-slate-500">{cred.id}</span>
                   </button>
                 ))}
               </div>
             </div>
+            ) : null}
 
             <p className="text-center text-xs">
-              <Link to="/" className="font-semibold text-brand-600 hover:underline">
+              <Link to="/" className="font-semibold text-brand-600 hover:underline dark:text-brand-400">
                 ← Back to event home
               </Link>
             </p>

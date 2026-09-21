@@ -14,6 +14,7 @@ import { EmptyState } from '../../components/EmptyState';
 import { adminNav } from './adminNav';
 import { api } from '../../services/api';
 import { formatDateTime } from '../../utils/format';
+import { validatePassword } from '../../utils/password';
 
 export function StaffManagement() {
   const [staff, setStaff] = useState<any[]>([]);
@@ -145,7 +146,7 @@ export function StaffManagement() {
         open={createOpen}
         onClose={handleClose}
         title="Add staff member"
-        description="Only name is required — ID and password are auto-filled if left blank."
+        description={'Set a password of at least 8 characters with a letter and a number.'}
         footer={
         <>
             <Button variant="secondary" onClick={handleClose}>
@@ -155,7 +156,8 @@ export function StaffManagement() {
             loading={saving}
             onClick={async () => {
               if (!form.name.trim()) { toast.error('Please enter the staff name'); return; }
-              if (form.password.trim().length < 6) { toast.error('Please set a password of at least 6 characters'); return; }
+              const pwError = validatePassword(form.password.trim());
+              if (pwError) { toast.error(pwError); return; }
               setSaving(true);
               try {
                 const payload = {

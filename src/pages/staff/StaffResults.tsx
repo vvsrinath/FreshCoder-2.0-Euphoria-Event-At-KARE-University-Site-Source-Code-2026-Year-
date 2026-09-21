@@ -205,6 +205,8 @@ export function StaffResults() {
             </div>
           </div>
 
+          {!loading && !error && results.length > 0 ? <ScoreHistogram results={results} /> : null}
+
           {loading ?
           <LoadingState /> :
           error ?
@@ -259,6 +261,56 @@ export function StaffResults() {
       </Modal>
     </PortalLayout>);
 
+}
+
+function ScoreHistogram({ results }: { results: any[] }) {
+  if (results.length === 0) return null;
+
+  const buckets = Array.from({ length: 10 }, (_, i) => ({ low: i * 10, high: i * 10 + 10, count: 0 }));
+  let sum = 0;
+  for (const r of results) {
+    const pct = Number(r.percentage) || 0;
+    sum += pct;
+    buckets[Math.min(9, Math.floor(pct / 10))].count += 1;
+  }
+  const max = Math.max(1, ...buckets.map((b) => b.count));
+  const average = Math.round((sum / results.length) * 10) / 10;
+
+  return (
+    <div className="border-b border-black/5 px-6 py-5 dark:border-white/10">
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        <h3 className="text-sm font-semibold text-navy-900 dark:text-white">Score distribution</h3>
+        <p className="text-xs text-slate-400 dark:text-slate-500">
+          {results.length} attempts · {average}% average
+        </p>
+      </div>
+      <div className="mt-6 flex h-32 items-end gap-1.5 sm:gap-2">
+        {buckets.map((b, i) => {
+          const pct = b.count === 0 ? 4 : Math.round((b.count / max) * 100);
+          return (
+            <div key={i} className="group flex h-full flex-1 flex-col items-center justify-end">
+              <div
+                className="relative w-full max-w-9 rounded-t-md bg-black/10 transition-colors group-hover:bg-brand-500/80 dark:bg-white/10"
+                style={{ height: `${pct}%` }}
+                title={`${b.low}–${b.high === 100 ? 100 : b.high}%: ${b.count} attempts`}
+              >
+                {b.count > 0 ? (
+                  <span className="absolute -top-5 left-1/2 -translate-x-1/2 text-[10px] font-semibold tabular-nums text-slate-500 dark:text-slate-400">
+                    {b.count}
+                  </span>
+                ) : null}
+              </div>
+            </div>
+          );
+        })}
+      </div>
+      <div className="mt-4 flex items-center justify-between border-t border-black/5 pt-2 dark:border-white/10">
+        <span className="text-[10px] font-medium text-slate-400">0%</span>
+        <span className="text-[11px] text-slate-400 dark:text-slate-500">Buckets of 10%</span>
+        <span className="text-[10px] font-medium text-slate-400">100%</span>
+      </div>
+    </div>
+  );
 }
 
 function DetailStat({ label, value, tone }: { label: string; value: number | string; tone: string }) {
