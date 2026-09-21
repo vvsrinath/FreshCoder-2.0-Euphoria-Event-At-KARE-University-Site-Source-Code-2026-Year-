@@ -82,7 +82,7 @@ async function login(ctx: RouteCtx): Promise<HttpResponse> {
   }
 
   const user = await queryOne("SELECT * FROM users WHERE UPPER(id) = ?", [userId]);
-  let valid = user !== undefined && verifyPassword(password, str(user["password_hash"]));
+  const valid = user !== undefined && verifyPassword(password, str(user["password_hash"]));
   if (user === undefined) verifyPassword(password, DUMMY_HASH);
 
   if (user === undefined || !valid) {
