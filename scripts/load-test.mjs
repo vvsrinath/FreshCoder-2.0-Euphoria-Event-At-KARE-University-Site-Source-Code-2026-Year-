@@ -45,7 +45,7 @@ async function run() {
     const r = await call("/auth/login", {
       method: "POST",
       headers: { "content-type": "application/json" },
-      body: JSON.stringify({ username: USER, password: PASS }),
+      body: JSON.stringify({ userId: USER, password: PASS }),
     });
     try {
       const body = JSON.parse(r.text);
@@ -65,7 +65,7 @@ async function run() {
       await call("/auth/login", {
         method: "POST",
         headers: { "content-type": "application/json" },
-        body: JSON.stringify({ username: USER, password: PASS }),
+body: JSON.stringify({ userId: USER, password: PASS }),
       });
     } else if (SCENARIO === "dashboard") {
       if (!token) return;
@@ -83,7 +83,7 @@ async function run() {
           while (ticks < 2) {
             const { done, value } = await reader.read();
             if (done) break;
-            if (decoder.decode(value).includes("event: tick")) ticks += 1;
+            if (decoder.decode(value).includes("\"type\":\"tick\"")) ticks += 1;
           }
           reader.cancel().catch(() => {});
         }
