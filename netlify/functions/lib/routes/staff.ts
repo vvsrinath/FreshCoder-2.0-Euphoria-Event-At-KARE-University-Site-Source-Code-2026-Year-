@@ -1220,6 +1220,39 @@ async function publishResults(ctx: RouteCtx): Promise<HttpResponse> {
   return ok({ ok: true });
 }
 
+// ---------------------------------------------------------------- announcements
+async function staffAnnouncements(ctx: RouteCtx): Promise<HttpResponse> {
+  const rows = await query("SELECT * FROM announcements ORDER BY created_at DESC LIMIT 200");
+  return ok({
+    announcements: rows.map((a) => ({
+      id: a["id"],
+      message: a["message"],
+      createdAt: a["created_at"],
+    })),
+  });
+}
+
+async function postAnnouncement(ctx: RouteCtx): Promise<HttpResponse> {
+  const message = str(ctx.body["message"] ?? "").trim();
+  if (!message) throw new ApiError(400, "Announcement message is required.");
+  if (message.length > 500) throw new ApiError(400, "Announcement is too long (500 characters max).");
+  const id = `AN${crypto16(8)}`;
+  await execute(
+    "INSERT INTO announcements (id, message, created_by, created_at, expires_at) VALUES (?, ?, ?, ?, ?)",
+    [id, message, ctx.user.id, utcNow(), ctx.body["expiresAt"] ? str(ctx.body["expiresAt"]) : null]
+  );
+  await audit(ctx.user.id, ctx.user.role, "Posted announcement", message.slice(0, 80));
+  return ok({ announcement: { id, message, createdAt: utcNow() } });
+}
+
+async function deleteAnnouncement(ctx: RouteCtx): Promise<HttpResponse> {
+  const row = await queryOne("SELECT * FROM announcements WHERE id = ?", [ctx.params[0]]);
+  if (row === undefined) throw new ApiError(404, "Announcement not found.");
+  await execute("DELETE FROM announcements WHERE id = ?", [ctx.params[0]]);
+  await audit(ctx.user.id, ctx.user.role, "Removed announcement", str(row["message"]).slice(0, 80));
+  return ok({ ok: true });
+}
+
 async function securityEvents(ctx: RouteCtx): Promise<HttpResponse> {
   let sql = "SELECT * FROM security_events WHERE 1 = 1";
   const params: unknown[] = [];
@@ -1351,6 +1384,9 @@ export const staffRoutes: RouteDef[] = [
   { method: "PUT", pattern: /^\/api\/results\/([^/]+)\/grade$/, roles: STAFF, handler: gradeResult },
   { method: "GET", pattern: /^\/api\/results\/([^/]+)$/, roles: ["STAFF", "SUPER_ADMIN", "STUDENT"], handler: singleResult },
 
+  { method: "GET", pattern: /^\/api\/staff\/announcements$/, roles: STAFF, handler: staffAnnouncements },
+  { method: "POST", pattern: /^\/api\/staff\/announcements$/, roles: STAFF, handler: postAnnouncement },
+  { method: "DELETE", pattern: /^\/api\/staff\/announcements\/([^/]+)$/, roles: STAFF, handler: deleteAnnouncement },
   { method: "GET", pattern: /^\/api\/staff\/security-events$/, roles: STAFF, handler: securityEvents },
   { method: "GET", pattern: /^\/api\/staff\/audit-logs$/, roles: STAFF, handler: auditLogs },
 

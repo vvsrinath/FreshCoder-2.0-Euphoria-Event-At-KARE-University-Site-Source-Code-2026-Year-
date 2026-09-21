@@ -808,10 +808,25 @@ async function studentResults(ctx: RouteCtx): Promise<HttpResponse> {
   });
 }
 
+async function announcements(ctx: RouteCtx): Promise<HttpResponse> {
+  const rows = await query(
+    "SELECT * FROM announcements WHERE (expires_at IS NULL OR expires_at > ?) ORDER BY created_at DESC",
+    [utcNow()]
+  );
+  return ok({
+    announcements: rows.map((a) => ({
+      id: a["id"],
+      message: a["message"],
+      createdAt: a["created_at"],
+    })),
+  });
+}
+
 const STUDENT = ["STUDENT"];
 
 export const studentRoutes: RouteDef[] = [
   { method: "GET", pattern: /^\/api\/student\/dashboard$/, roles: STUDENT, handler: dashboard },
+  { method: "GET", pattern: /^\/api\/student\/announcements$/, roles: STUDENT, handler: announcements },
   { method: "GET", pattern: /^\/api\/student\/tests$/, roles: STUDENT, handler: listTests },
   { method: "GET", pattern: /^\/api\/student\/tests\/([^/]+)$/, roles: STUDENT, handler: getTest },
   { method: "POST", pattern: /^\/api\/student\/tests\/([^/]+)\/start$/, roles: STUDENT, handler: startTest },

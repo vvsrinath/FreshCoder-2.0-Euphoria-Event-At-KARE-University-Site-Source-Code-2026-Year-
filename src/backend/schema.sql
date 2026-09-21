@@ -177,6 +177,15 @@ CREATE INDEX IF NOT EXISTS idx_results_test ON results(test_id);
 CREATE INDEX IF NOT EXISTS idx_results_student ON results(student_id);
 CREATE INDEX IF NOT EXISTS idx_results_student_published ON results(student_id, published);
 CREATE INDEX IF NOT EXISTS idx_tests_scheduled ON tests(scheduled_start);
+
+CREATE TABLE IF NOT EXISTS announcements (
+    id         TEXT PRIMARY KEY,
+    message    TEXT NOT NULL,
+    created_by TEXT NOT NULL REFERENCES users(id),
+    created_at TEXT NOT NULL,
+    expires_at TEXT
+);
+CREATE INDEX IF NOT EXISTS idx_announcements_created ON announcements(created_at);
 CREATE INDEX IF NOT EXISTS idx_answers_attempt_q ON answers(attempt_id, question_id);
 
 CREATE TABLE IF NOT EXISTS security_events (

@@ -6,6 +6,7 @@ import { BrandMark } from './BrandMark';
 import { GlobalFooter } from './GlobalFooter';
 import { ConfirmDialog } from './ConfirmDialog';
 import { ThemeToggle } from './ThemeToggle';
+import { AnnouncementBanner } from './AnnouncementBanner';
 import { useAuth } from '../contexts/AuthContext';
 import { api } from '../services/api';
 import { cn } from '../utils/cn';
@@ -232,7 +233,10 @@ export function PortalLayout({ portalLabel, navItems, children, headerRight, nav
           </header>
 
           {/* Page Body */}
-          <main className="fc-scroll min-w-0 flex-1 p-5 sm:p-8">{children}</main>
+          <main className="fc-scroll min-w-0 flex-1 p-5 sm:p-8">
+            {isStudent && <AnnouncementBanner />}
+            {children}
+          </main>
         </div>
 
         {/* Persistent Bottom Footer */}

@@ -107,6 +107,10 @@ export const api = {
   requestEdit: (attemptId: string, questionId: string, reason: string, value: string) =>
   request<any>('POST', `/api/student/attempts/${attemptId}/edit-request`, { questionId, reason, value }),
   studentResults: () => request<any>('GET', '/api/student/results'),
+  studentAnnouncements: () => request<any>('GET', '/api/student/announcements'),
+  staffAnnouncements: () => request<any>('GET', '/api/staff/announcements'),
+  postAnnouncement: (message: string) => request<any>('POST', '/api/staff/announcements', { message }),
+  deleteAnnouncement: (id: string) => request<any>('DELETE', `/api/staff/announcements/${id}`),
   verifyStaffPin: (attemptId: string, pin: string) =>
     request<any>('POST', `/api/student/attempts/${attemptId}/verify-pin`, { pin }),
 

@@ -15,6 +15,7 @@ import { LoadingState } from '../../components/LoadingState';
 import { ErrorState } from '../../components/ErrorState';
 import { StatCard } from '../../components/StatCard';
 import { StaffNavFooter, staffNav } from './staffNav';
+import { StaffAnnouncements } from './StaffAnnouncements';
 import { useAuth } from '../../contexts/AuthContext';
 import { api } from '../../services/api';
 import { useLive } from '../../hooks/useLive';
@@ -219,6 +220,8 @@ export function StaffDashboard() {
               </div>
             </div>
           ) : null}
+
+          <StaffAnnouncements />
 
           <div className="grid gap-6 lg:grid-cols-2">
             <div className="rounded-2xl bg-white p-6 shadow-sm ring-1 ring-black/5">
