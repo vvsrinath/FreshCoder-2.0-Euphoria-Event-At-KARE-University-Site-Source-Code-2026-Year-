@@ -1138,6 +1138,7 @@ async function singleResult(ctx: RouteCtx): Promise<HttpResponse> {
   if (ctx.user.role === "STUDENT" && (str(row["student_id"]) !== ctx.user.id || !bool(row["published"]))) {
     throw new ApiError(403, "You do not have permission to view this result.");
   }
+  const breakdown = loads(str(row["breakdown"]), []) as Record<string, unknown>[];
   return ok({
     result: {
       id: row["id"],
@@ -1157,8 +1158,54 @@ async function singleResult(ctx: RouteCtx): Promise<HttpResponse> {
       submittedAt: row["submitted_at"],
       published: bool(row["published"]),
       attemptStatus: row["attempt_status"],
+      breakdown: breakdown.map((b) => ({
+        questionId: b["questionId"],
+        type: b["type"],
+        marks: b["marks"],
+        awarded: b["awarded"],
+        correct: b["correct"],
+        given: b["given"],
+        overridden: Boolean(b["override"]),
+      })),
     },
   });
+}
+
+/** Rubric / manual grading: rewrite per-question awarded marks and recompute totals. */
+async function gradeResult(ctx: RouteCtx): Promise<HttpResponse> {
+  const row = await queryOne("SELECT * FROM results WHERE id = ?", [ctx.params[0]]);
+  if (row === undefined) throw new ApiError(404, "Result not found.");
+  const overrides = (ctx.body["overrides"] as Record<string, unknown>) ?? {};
+  if (typeof overrides !== "object" || Array.isArray(overrides)) {
+    throw new ApiError(400, "overrides must be an object mapping questionId to awarded marks.");
+  }
+  const breakdown = loads(str(row["breakdown"]), []) as Record<string, unknown>[];
+  for (const b of breakdown) {
+    const qid = String(b["questionId"]);
+    if (!(qid in overrides)) continue;
+    const next = Number(overrides[qid]);
+    if (!Number.isFinite(next) || next < 0) throw new ApiError(400, `Invalid marks for question ${qid}.`);
+    b["awarded"] = Math.min(next, num(b["marks"]));
+    b["correct"] = Number(b["awarded"]) === num(b["marks"]) && num(b["marks"]) > 0;
+    b["override"] = true;
+  }
+  let score = 0;
+  let answered = 0;
+  for (const b of breakdown) {
+    score += num(b["awarded"]);
+    if (str(b["given"] ?? "").trim()) answered += 1;
+  }
+  const correct = breakdown.filter((b) => b["correct"] === true).length;
+  const wrong = Math.max(0, answered - correct);
+  const unanswered = breakdown.length - answered;
+  const maxScore = breakdown.reduce((sum, b) => sum + num(b["marks"]), 0);
+  const percentage = maxScore ? Math.round((score / maxScore) * 1000) / 10 : 0;
+  await execute(
+    "UPDATE results SET score = ?, correct = ?, wrong = ?, unanswered = ?, percentage = ?, breakdown = ? WHERE id = ?",
+    [score, correct, wrong, unanswered, percentage, JSON.stringify(breakdown), ctx.params[0]]
+  );
+  await audit(ctx.user.id, ctx.user.role, "Manually graded result", str(row["student_id"]), `${score}/${maxScore}`);
+  return ok({ result: { id: ctx.params[0], score, maxScore, percentage } });
 }
 
 async function publishResults(ctx: RouteCtx): Promise<HttpResponse> {
@@ -1301,6 +1348,7 @@ export const staffRoutes: RouteDef[] = [
 
   { method: "GET", pattern: /^\/api\/results$/, roles: STAFF, handler: results },
   { method: "POST", pattern: /^\/api\/results\/publish$/, roles: STAFF, handler: publishResults },
+  { method: "PUT", pattern: /^\/api\/results\/([^/]+)\/grade$/, roles: STAFF, handler: gradeResult },
   { method: "GET", pattern: /^\/api\/results\/([^/]+)$/, roles: ["STAFF", "SUPER_ADMIN", "STUDENT"], handler: singleResult },
 
   { method: "GET", pattern: /^\/api\/staff\/security-events$/, roles: STAFF, handler: securityEvents },

@@ -163,8 +163,11 @@ export const api = {
   results: (filters: Record<string, string | undefined> = {}) =>
   request<any>('GET', `/api/results${qs(filters)}`),
   result: (id: string) => request<any>('GET', `/api/results/${id}`),
+  analytics: (testId: string) => request<any>('GET', `/api/staff/reports/analytics?testId=${encodeURIComponent(testId)}`),
   publishResults: (testId: string, published: boolean) =>
   request<any>('POST', '/api/results/publish', { testId, published }),
+  gradeResult: (id: string, overrides: Record<string, number>) =>
+  request<any>('PUT', `/api/results/${id}/grade`, { overrides }),
 
   // ---- logs ----
   securityEvents: (filters: Record<string, string | undefined> = {}) =>

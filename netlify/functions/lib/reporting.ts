@@ -90,24 +90,49 @@ export async function questionLevelAnalytics(testId: string): Promise<Record<str
   const rows = await query("SELECT * FROM results WHERE test_id = ?", [testId]);
   const acc: Record<string, Record<string, number>> = {};
   for (const row of rows) {
+    const pct = num(row["percentage"]);
     for (const entry of loadBreakdown(row)) {
       const questionId = str(entry["questionId"]);
       if (!questionId) continue;
       const bucket =
-        acc[questionId] ?? { questionId, instances: 0, correct: 0, avgAwarded: 0, totalMarks: 0 };
+        acc[questionId] ??
+        {
+          questionId,
+          instances: 0,
+          correct: 0,
+          avgAwarded: 0,
+          totalMarks: 0,
+          rightSum: 0,
+          rightN: 0,
+          wrongSum: 0,
+          wrongN: 0,
+        };
       bucket["instances"] += 1;
       bucket["totalMarks"] += num(entry["marks"]);
-      if (entry["correct"] === true) bucket["correct"] += 1;
       bucket["avgAwarded"] += num(entry["awarded"]);
+      const ivCorrect = entry["correct"] === true;
+      if (ivCorrect) {
+        bucket["correct"] += 1;
+        bucket["rightSum"] += pct;
+        bucket["rightN"] += 1;
+      } else if (str(entry["given"] ?? "").trim() !== "") {
+        bucket["wrongSum"] += pct;
+        bucket["wrongN"] += 1;
+      }
       acc[questionId] = bucket;
     }
   }
-  const out: Record<string, number | string>[] = Object.values(acc).map((bucket) => {
+  const out: Record<string, number | string | null>[] = Object.values(acc).map((bucket) => {
     const instances = numberOrOne(bucket);
+    const rightMean = bucket["rightN"] ? bucket["rightSum"] / Number(bucket["rightN"]) : null;
+    const wrongMean = bucket["wrongN"] ? bucket["wrongSum"] / Number(bucket["wrongN"]) : null;
+    const discrimination =
+      rightMean !== null && wrongMean !== null ? Math.round((rightMean - wrongMean) * 100) / 100 : null;
     return {
       ...bucket,
       avgAwarded: Math.round((bucket["avgAwarded"] / instances) * 100) / 100,
       difficultyIndex: Math.round((bucket["correct"] / instances) * 1000) / 1000,
+      discrimination,
     };
   });
   const ids = out.map((b) => String(b["questionId"])).filter(Boolean);
