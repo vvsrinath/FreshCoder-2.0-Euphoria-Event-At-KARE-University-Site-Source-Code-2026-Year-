@@ -192,8 +192,10 @@ export const staffRoutes: Record<string, Handler> = {
     {
       throw new HttpError(400, 'Fix the question distribution before scheduling this test.');
     }
+    const scheduledStart = ctx.body?.scheduledStart ?? test.scheduledStart;
+    if (!scheduledStart) throw new HttpError(400, 'Choose a scheduled start time before publishing this test.');
     transition(test, 'SCHEDULED');
-    test.scheduledStart = ctx.body?.scheduledStart ?? test.scheduledStart;
+    test.scheduledStart = scheduledStart;
     audit(user.id, user.role, 'Scheduled test', test.name, String(test.scheduledStart ?? ''));
     return { test };
   },
@@ -201,6 +203,10 @@ export const staffRoutes: Record<string, Handler> = {
   'POST /api/staff/tests/:id/start': (ctx) => {
     const user = requireRole(ctx, 'STAFF', 'SUPER_ADMIN');
     const test = getTest(ctx.params.id);
+    if (!test.scheduledStart) throw new HttpError(400, 'Set a scheduled start time before making this test live.');
+    if (new Date(String(test.scheduledStart).replace(' ', 'T')).getTime() > Date.now()) {
+      throw new HttpError(409, `This test does not start until ${test.scheduledStart}.`);
+    }
     if (test.status === 'DRAFT') transition(test, 'SCHEDULED');
     transition(test, 'ACTIVE');
     test.startedAt = now();

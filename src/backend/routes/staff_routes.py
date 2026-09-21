@@ -386,12 +386,15 @@ def schedule_test(test_id):
         return jsonify({"message": "Test not found."}), 404
     if row["selection_mode"] == "DISTRIBUTION" and distribution_total(loads(row["distribution"], {})) != row["question_count"]:
         return jsonify({"message": "Fix the question distribution before scheduling this test."}), 400
+    body = request.get_json(silent=True) or {}
+    scheduled_start = body.get("scheduledStart", row["scheduled_start"])
+    if not scheduled_start:
+        return jsonify({"message": "Choose a scheduled start time before publishing this test."}), 400
     error = transition(row, "SCHEDULED")
     if error:
         return error
-    body = request.get_json(silent=True) or {}
     execute("UPDATE tests SET scheduled_start = ? WHERE id = ?",
-            (body.get("scheduledStart", row["scheduled_start"]), test_id))
+            (scheduled_start, test_id))
     audit(g.user["id"], g.user["role"], "Scheduled test", row["name"])
     return jsonify({"test": test_to_json(query_one("SELECT * FROM tests WHERE id = ?", (test_id,)))})
 
@@ -402,6 +405,11 @@ def start_test(test_id):
     row = query_one("SELECT * FROM tests WHERE id = ?", (test_id,))
     if row is None:
         return jsonify({"message": "Test not found."}), 404
+    if not row["scheduled_start"]:
+        return jsonify({"message": "Set a scheduled start time before making this test live."}), 400
+    scheduled_at = parse_utc(row["scheduled_start"])
+    if scheduled_at is not None and scheduled_at > datetime.now(timezone.utc):
+        return jsonify({"message": f"This test does not start until {row['scheduled_start']}."}), 409
     if row["status"] == "DRAFT":
         transition(row, "SCHEDULED")
         row = query_one("SELECT * FROM tests WHERE id = ?", (test_id,))

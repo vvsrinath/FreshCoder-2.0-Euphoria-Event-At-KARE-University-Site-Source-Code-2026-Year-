@@ -359,9 +359,11 @@ async function scheduleTest(ctx: RouteCtx): Promise<HttpResponse> {
   if (str(row["selection_mode"]) === "DISTRIBUTION" && distributionTotal(loads(str(row["distribution"]), {}) as Record<string, unknown>) !== num(row["question_count"])) {
     throw new ApiError(400, "Fix the question distribution before scheduling this test.");
   }
+  const scheduledStart = ctx.body["scheduledStart"] !== undefined ? str(ctx.body["scheduledStart"]) : str(row["scheduled_start"]);
+  if (!scheduledStart) throw new ApiError(400, "Choose a scheduled start time before publishing this test.");
   transition(row, "SCHEDULED");
   await execute("UPDATE tests SET scheduled_start = ? WHERE id = ?", [
-    ctx.body["scheduledStart"] !== undefined ? ctx.body["scheduledStart"] : row["scheduled_start"],
+    scheduledStart,
     ctx.params[0],
   ]);
   await audit(ctx.user.id, ctx.user.role, "Scheduled test", str(row["name"]));
@@ -372,6 +374,13 @@ async function scheduleTest(ctx: RouteCtx): Promise<HttpResponse> {
 async function startTest(ctx: RouteCtx): Promise<HttpResponse> {
   let row = await queryOne("SELECT * FROM tests WHERE id = ?", [ctx.params[0]]);
   if (row === undefined) throw new ApiError(404, "Test not found.");
+  const scheduledAt = parseUtc(str(row["scheduled_start"]));
+  if (scheduledAt === undefined) {
+    throw new ApiError(400, "Set a scheduled start time before making this test live.");
+  }
+  if (scheduledAt.getTime() > Date.now()) {
+    throw new ApiError(409, `This test does not start until ${str(row["scheduled_start"])}.`);
+  }
   if (str(row["selection_mode"]) === "RANDOM") {
     const owned = await queryOne("SELECT COUNT(*) n FROM test_questions WHERE test_id = ?", [ctx.params[0]]);
     if (owned && num(owned["n"]) > 0 && num(owned["n"]) < num(row["question_count"])) {

@@ -194,6 +194,14 @@ function TestControls({ test, onChanged }: { test: Test; onChanged: () => void }
     }
   };
 
+  const scheduledAt = test.scheduledStart ? new Date(String(test.scheduledStart).replace(' ', 'T')).getTime() : null;
+  const startReady = scheduledAt !== null && scheduledAt <= Date.now();
+  const startHint = scheduledAt === null
+    ? 'Set a scheduled start time (Details step) before making this test live.'
+    : !startReady
+      ? `This test starts at ${new Date(test.scheduledStart as string).toLocaleString()} and cannot be made live before then.`
+      : undefined;
+
   return (
     <div className="flex flex-wrap items-center gap-2">
       {test.status === 'DRAFT' && (
@@ -209,6 +217,8 @@ function TestControls({ test, onChanged }: { test: Test; onChanged: () => void }
         <Button
           variant="success"
           loading={busy === 'start'}
+          disabled={!startReady}
+          title={startHint}
           icon={<PlayIcon className="h-4 w-4" />}
           onClick={() => run('start', () => api.startTestAsStaff(test.id), 'Test is now live.')}
         >
@@ -229,6 +239,8 @@ function TestControls({ test, onChanged }: { test: Test; onChanged: () => void }
         <Button
           variant="success"
           loading={busy === 'resume'}
+          disabled={!startReady}
+          title={startHint}
           icon={<PlayIcon className="h-4 w-4" />}
           onClick={() => run('resume', () => api.startTestAsStaff(test.id), 'Test resumed.')}
         >
@@ -1001,7 +1013,13 @@ function PreviewStep({
           </p>
         </div>
         {test.status === 'DRAFT' ? (
-          <Button loading={publishing} icon={<CheckCircle2Icon className="h-4 w-4" />} onClick={publish}>
+          <Button
+            loading={publishing}
+            disabled={!test.scheduledStart}
+            title={test.scheduledStart ? undefined : 'Set a scheduled start time (Details step) first.'}
+            icon={<CheckCircle2Icon className="h-4 w-4" />}
+            onClick={publish}
+          >
             Publish test
           </Button>
         ) : (

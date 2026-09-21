@@ -104,6 +104,12 @@ export function TestManagement() {
     [load]
   );
 
+  const isStartableNow = (t: Test): boolean => {
+    if (!t.scheduledStart) return false;
+    const at = new Date(String(t.scheduledStart).replace(' ', 'T')).getTime();
+    return !Number.isNaN(at) && at <= Date.now();
+  };
+
   const deleteTest = useCallback(
     async (row: Test) => {
       if (!window.confirm(`Archive ${row.name}? This cannot be undone for the current session.`)) return;
@@ -305,8 +311,14 @@ export function TestManagement() {
                             type="button"
                             onClick={() => startTest(row)}
                             className="rounded-lg p-1.5 text-emerald-600 hover:bg-emerald-50 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
-                            title="Start test"
-                            disabled={!['DRAFT', 'SCHEDULED'].includes(row.status)}
+                            title={
+                              isStartableNow(row)
+                                ? 'Start test'
+                                : row.scheduledStart
+                                  ? `Starts ${row.scheduleLabel}`
+                                  : 'Set a scheduled start time first (open workspace)'
+                            }
+                            disabled={!['DRAFT', 'SCHEDULED'].includes(row.status) || !isStartableNow(row)}
                           >
                             <PlayIcon className="h-4 w-4 fill-emerald-600" />
                           </button>
