@@ -19,19 +19,31 @@ export function MyTests() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  const load = useCallback(() => {
-    setLoading(true);
-    api.
-    studentDashboard().
-    then((res) => {
+  const load = useCallback(async (initial = false) => {
+    if (initial) {
+      setLoading(true);
+      setError(null);
+    }
+    try {
+      const res = await api.studentDashboard();
       setTests(res.tests);
       setError(null);
-    }).
-    catch((err) => setError(err.message)).
-    finally(() => setLoading(false));
+    } catch (err) {
+      if (initial) {
+        setError((err as Error).message);
+      }
+    } finally {
+      if (initial) setLoading(false);
+    }
   }, []);
 
-  useEffect(load, [load]);
+  useEffect(() => {
+    load(true);
+    const id = window.setInterval(() => {
+      load(false);
+    }, 15000);
+    return () => window.clearInterval(id);
+  }, [load]);
 
   const columns: Column<any>[] = [
   {
@@ -69,12 +81,21 @@ export function MyTests() {
   return (
     <PortalLayout portalLabel="Student Portal" navItems={studentNav}>
       <div className="mx-auto max-w-6xl space-y-4">
-        <h1 className="text-2xl font-bold text-navy-800">My tests</h1>
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <h1 className="text-2xl font-bold text-navy-800">My tests</h1>
+          <span className="inline-flex items-center gap-1.5 rounded-full border border-emerald-200 bg-emerald-50 px-3 py-1 text-[11px] font-semibold text-emerald-700">
+            <span className="relative flex h-2 w-2">
+              <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-75" />
+              <span className="relative inline-flex h-2 w-2 rounded-full bg-emerald-500" />
+            </span>
+            Live · auto-refreshes every 15s
+          </span>
+        </div>
         <Card>
           {loading ?
           <LoadingState /> :
           error ?
-          <ErrorState message={error} onRetry={load} /> :
+          <ErrorState message={error} onRetry={() => load(true)} /> :
 
           <DataTable
             columns={columns}

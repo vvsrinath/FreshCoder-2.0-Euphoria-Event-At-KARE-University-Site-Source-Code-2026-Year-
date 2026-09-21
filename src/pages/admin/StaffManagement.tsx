@@ -155,13 +155,14 @@ export function StaffManagement() {
             loading={saving}
             onClick={async () => {
               if (!form.name.trim()) { toast.error('Please enter the staff name'); return; }
+              if (form.password.trim().length < 6) { toast.error('Please set a password of at least 6 characters'); return; }
               setSaving(true);
               try {
                 const payload = {
                   id: (form.id.trim() || nextId).toUpperCase(),
                   name: form.name.trim(),
                   email: form.email.trim(),
-                  password: form.password.trim() || 'staff@2026',
+                  password: form.password.trim(),
                 };
                 await api.createStaff(payload);
                 toast.success(`${payload.id} created`);
@@ -202,10 +203,10 @@ export function StaffManagement() {
             onChange={(e) => setForm({ ...form, email: e.target.value })}
           />
           <TextField
-            label="Password"
+            label="Password *"
             type="password"
-            placeholder="Leave blank for default: staff@2026"
-            hint="If left blank, password will be staff@2026"
+            placeholder="Choose a password (min 6 characters)"
+            hint="This is the sign-in password the new staff member will use."
             value={form.password}
             onChange={(e) => setForm({ ...form, password: e.target.value })}
           />

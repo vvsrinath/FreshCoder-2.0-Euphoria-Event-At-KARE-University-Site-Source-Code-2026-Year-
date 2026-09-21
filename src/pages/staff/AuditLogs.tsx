@@ -17,18 +17,31 @@ export function AuditLogs() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  const load = useCallback(() => {
-    api.
-    auditLogs({ search }).
-    then((res) => {
+  const load = useCallback(async (initial = false) => {
+    if (initial) {
+      setLoading(true);
+      setError(null);
+    }
+    try {
+      const res = await api.auditLogs({ search });
       setLogs(res.logs);
       setError(null);
-    }).
-    catch((err) => setError(err.message)).
-    finally(() => setLoading(false));
+    } catch (err) {
+      if (initial) {
+        setError((err as Error).message);
+      }
+    } finally {
+      if (initial) setLoading(false);
+    }
   }, [search]);
 
-  useEffect(load, [load]);
+  useEffect(() => {
+    load(true);
+    const id = window.setInterval(() => {
+      load(false);
+    }, 15000);
+    return () => window.clearInterval(id);
+  }, [load]);
 
   const columns: Column<any>[] = [
   { key: 'time', header: 'Time', render: (row) => formatDateTime(row.createdAt) },
@@ -51,6 +64,13 @@ export function AuditLogs() {
           <p className="mt-1 text-sm text-slate-600">
             Every administrative action is traceable to an actor, target and timestamp.
           </p>
+          <span className="mt-2 inline-flex items-center gap-1.5 rounded-full border border-emerald-200 bg-emerald-50 px-3 py-1 text-[11px] font-semibold text-emerald-700">
+            <span className="relative flex h-2 w-2">
+              <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-75" />
+              <span className="relative inline-flex h-2 w-2 rounded-full bg-emerald-500" />
+            </span>
+            Live · auto-refreshes every 15s
+          </span>
         </div>
 
         <Card>
@@ -68,7 +88,7 @@ export function AuditLogs() {
           {loading ?
           <LoadingState /> :
           error ?
-          <ErrorState message={error} onRetry={load} /> :
+          <ErrorState message={error} onRetry={() => load(true)} /> :
 
           <DataTable
             columns={columns}
