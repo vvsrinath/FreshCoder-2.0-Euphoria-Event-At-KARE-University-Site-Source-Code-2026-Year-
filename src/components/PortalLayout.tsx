@@ -1,6 +1,6 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { NavLink, useNavigate } from 'react-router-dom';
-import { ChevronDownIcon, LogOutIcon, MenuIcon, XIcon, UserIcon, ShieldAlertIcon } from 'lucide-react';
+import { ChevronDownIcon, LogOutIcon, MenuIcon, XIcon, UserIcon, ShieldAlertIcon, AlertTriangleIcon } from 'lucide-react';
 import { toast } from 'sonner';
 import { BrandMark } from './BrandMark';
 import { GlobalFooter } from './GlobalFooter';
@@ -34,6 +34,8 @@ export function PortalLayout({ portalLabel, navItems, children, headerRight, nav
   const [loggingOut, setLoggingOut] = useState(false);
   const [devtoolsOpen, setDevtoolsOpen] = useState(false);
   const [devtoolsViolations, setDevtoolsViolations] = useState(0);
+  const [tabBlocked, setTabBlocked] = useState(false);
+  const tabBlockedRef = useRef(false);
 
   const handleLogout = async () => {
     setLoggingOut(true);
@@ -131,6 +133,22 @@ export function PortalLayout({ portalLabel, navItems, children, headerRight, nav
     };
     const devtoolsInterval = window.setInterval(detectDevTools, 500);
 
+    // Tab-switch / window-loss guard — the moment the student leaves this tab, block the portal
+    const checkFocus = () => {
+      const away = document.hidden || !document.hasFocus();
+      if (away && !tabBlockedRef.current) {
+        tabBlockedRef.current = true;
+        setTabBlocked(true);
+        api.reportEvent('FOCUS_LOST', 'Student switched tabs or left the portal window').catch(() => undefined);
+      } else if (!away && tabBlockedRef.current) {
+        tabBlockedRef.current = false;
+        setTabBlocked(false);
+      }
+    };
+    document.addEventListener('visibilitychange', checkFocus);
+    window.addEventListener('blur', checkFocus);
+    window.addEventListener('focus', checkFocus);
+
     document.addEventListener('contextmenu', onContextMenu, true);
     document.addEventListener('copy', onCopy, true);
     document.addEventListener('cut', onCut, true);
@@ -144,6 +162,9 @@ export function PortalLayout({ portalLabel, navItems, children, headerRight, nav
       document.removeEventListener('paste', onPaste, true);
       document.removeEventListener('dragstart', onDragStart, true);
       window.removeEventListener('keydown', onKeyDown, true);
+      document.removeEventListener('visibilitychange', checkFocus);
+      window.removeEventListener('blur', checkFocus);
+      window.removeEventListener('focus', checkFocus);
       window.clearInterval(devtoolsInterval);
     };
   }, [isStudent]);
@@ -185,6 +206,30 @@ export function PortalLayout({ portalLabel, navItems, children, headerRight, nav
           </div>
         </div>
       )}
+      {/* Tab-switch Blocker — portal hidden until the student returns */}
+      {isStudent && tabBlocked && (
+        <div className="fixed inset-0 z-[70] flex items-center justify-center bg-[#0a1026] p-6">
+          <div className="w-full max-w-md rounded-3xl border border-amber-500/30 bg-[#0d162f]/95 p-10 text-center shadow-2xl backdrop-blur-md">
+            <div className="mx-auto mb-5 flex h-16 w-16 items-center justify-center rounded-full bg-amber-600/30 text-amber-400 border-2 border-amber-500/50 animate-pulse">
+              <AlertTriangleIcon className="h-8 w-8" />
+            </div>
+            <h2 className="text-2xl font-black text-white">Stay on this page</h2>
+            <p className="mt-3 text-sm leading-relaxed text-slate-300">
+              Switching to another tab or window is <strong className="text-amber-400">not allowed</strong>.
+              Return to this page to continue.
+            </p>
+            <div className="mt-4 rounded-xl border border-amber-500/30 bg-amber-500/10 p-4">
+              <p className="text-xs font-semibold text-amber-400">
+                This violation has been recorded. Staff will be notified.
+              </p>
+            </div>
+            <p className="mt-4 text-xs text-slate-400">
+              The portal is blocked until you come back to this tab.
+            </p>
+          </div>
+        </div>
+      )}
+
       {/* Dark Navy Sidebar */}
       <aside
         className={cn(
