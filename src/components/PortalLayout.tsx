@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { NavLink, useNavigate } from 'react-router-dom';
-import { ChevronDownIcon, LogOutIcon, MenuIcon, XIcon, UserIcon } from 'lucide-react';
+import { ChevronDownIcon, LogOutIcon, MenuIcon, XIcon, UserIcon, ShieldAlertIcon } from 'lucide-react';
 import { toast } from 'sonner';
 import { BrandMark } from './BrandMark';
 import { GlobalFooter } from './GlobalFooter';
@@ -32,6 +32,8 @@ export function PortalLayout({ portalLabel, navItems, children, headerRight, nav
   const [open, setOpen] = useState(false);
   const [confirmLogout, setConfirmLogout] = useState(false);
   const [loggingOut, setLoggingOut] = useState(false);
+  const [devtoolsOpen, setDevtoolsOpen] = useState(false);
+  const [devtoolsViolations, setDevtoolsViolations] = useState(0);
 
   const handleLogout = async () => {
     setLoggingOut(true);
@@ -86,7 +88,7 @@ export function PortalLayout({ portalLabel, navItems, children, headerRight, nav
       }
       if (key === 'Escape') { e.preventDefault(); e.stopPropagation(); return; }
       if (ctrl) {
-        const blockList = ['Tab','w','t','n','r','R','i','I','j','J','c','C','u','U','s','S','p','P','a','A','f','F'];
+        const blockList = ['Tab','w','t','n','r','R','i','I','j','J','c','C','u','U','s','S','p','P','a','A','f','F','m','M','e','E','k','K'];
         if (shift) blockList.push('Delete');
         if (blockList.includes(key)) {
           e.preventDefault(); e.stopPropagation();
@@ -96,6 +98,38 @@ export function PortalLayout({ portalLabel, navItems, children, headerRight, nav
       }
       if (e.altKey) { e.preventDefault(); e.stopPropagation(); logViolation('COPY_BLOCKED', `Alt+${key} blocked`); }
     };
+
+    // Banking-style DevTools open detection (docked/undocked) so Inspect & F12 can be policed
+    let devtoolsDetected = false;
+    let violationCount = 0;
+    const detectDevTools = () => {
+      const widthDiff = window.outerWidth - window.innerWidth;
+      const heightDiff = window.outerHeight - window.innerHeight;
+      const isOpen = widthDiff > 150 || heightDiff > 150;
+      if (isOpen && !devtoolsDetected) {
+        devtoolsDetected = true;
+        violationCount++;
+        setDevtoolsViolations(violationCount);
+        api.reportEvent('DEVTOOLS_ATTEMPT', `DevTools detected via window size (${widthDiff}x${heightDiff}) #${violationCount}`).catch(() => undefined);
+        setDevtoolsOpen(true);
+      } else if (!isOpen && devtoolsDetected) {
+        devtoolsDetected = false;
+        setDevtoolsOpen(false);
+      }
+      if (!devtoolsDetected) {
+        const start = performance.now();
+        // eslint-disable-next-line no-debugger
+        debugger;
+        if (performance.now() - start > 80) {
+          devtoolsDetected = true;
+          violationCount++;
+          setDevtoolsViolations(violationCount);
+          api.reportEvent('DEVTOOLS_ATTEMPT', `DevTools detected via debugger timing #${violationCount}`).catch(() => undefined);
+          setDevtoolsOpen(true);
+        }
+      }
+    };
+    const devtoolsInterval = window.setInterval(detectDevTools, 500);
 
     document.addEventListener('contextmenu', onContextMenu, true);
     document.addEventListener('copy', onCopy, true);
@@ -110,6 +144,7 @@ export function PortalLayout({ portalLabel, navItems, children, headerRight, nav
       document.removeEventListener('paste', onPaste, true);
       document.removeEventListener('dragstart', onDragStart, true);
       window.removeEventListener('keydown', onKeyDown, true);
+      window.clearInterval(devtoolsInterval);
     };
   }, [isStudent]);
 
@@ -117,6 +152,38 @@ export function PortalLayout({ portalLabel, navItems, children, headerRight, nav
     <div className={cn('flex min-h-screen w-full bg-[#f8fafc] dark:bg-[#161617]', isStudent && 'secure-zone')}>
       {isStudent && (
         <style>{`.secure-zone, .secure-zone * { user-select: none; -webkit-user-select: none; -moz-user-select: none; -ms-user-select: none; } .secure-zone input, .secure-zone textarea { user-select: text; -webkit-user-select: text; }`}</style>
+      )}
+
+      {/* DevTools Blocker — portal hidden until DevTools is closed */}
+      {isStudent && devtoolsOpen && (
+        <div className="fixed inset-0 z-[70] flex items-center justify-center bg-[#0a1026] p-6">
+          <div className="w-full max-w-md rounded-3xl border border-red-500/30 bg-[#0d162f]/95 p-10 text-center shadow-2xl backdrop-blur-md">
+            <div className="mx-auto mb-5 flex h-16 w-16 items-center justify-center rounded-full bg-red-600/30 text-red-400 border-2 border-red-500/50 animate-pulse">
+              <ShieldAlertIcon className="h-8 w-8" />
+            </div>
+            <h2 className="text-2xl font-black text-white">Developer Tools Detected</h2>
+            <p className="mt-3 text-sm leading-relaxed text-slate-300">
+              <strong className="text-red-400">Inspection is strictly prohibited</strong> on the student portal.
+              Developer Tools must be closed to continue.
+            </p>
+            <div className="mt-4 rounded-xl border border-amber-500/30 bg-amber-500/10 p-4">
+              <p className="text-xs font-semibold text-amber-400">
+                To close Developer Tools:<br />
+                Press <kbd className="mx-1 rounded bg-white/10 px-1.5 py-0.5 font-mono text-[10px]">F12</kbd> or
+                <kbd className="mx-1 rounded bg-white/10 px-1.5 py-0.5 font-mono text-[10px]">Ctrl+Shift+I</kbd> again,
+                or click the X in the DevTools panel.
+              </p>
+            </div>
+            <p className="mt-3 text-xs font-semibold text-red-400">
+              This violation has been recorded. ({devtoolsViolations} total)
+            </p>
+            <div className="mt-5 rounded-xl border border-red-500/20 bg-red-500/5 p-3">
+              <p className="text-[11px] text-red-300">
+                Staff will be notified. Right-click Inspect, F12 and copy/paste are disabled on this portal.
+              </p>
+            </div>
+          </div>
+        </div>
       )}
       {/* Dark Navy Sidebar */}
       <aside
