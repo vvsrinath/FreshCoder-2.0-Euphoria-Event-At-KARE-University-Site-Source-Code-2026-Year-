@@ -10,32 +10,51 @@ import { api } from '../../services/api';
 import { relativeTime, titleCase } from '../../utils/format';
 import { eventConfig } from '../../data/eventConfig';
 
+const POLL_INTERVAL_MS = 15000;
+
 export function AdminDashboard() {
   const [data, setData] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
 
-  const load = useCallback(() => {
-    setLoading(true);
-    setError(null);
-    api.
-    adminOverview().
-    then((res) => {
+  const load = useCallback(async (initial = false) => {
+    if (initial) {
+      setLoading(true);
+      setError(null);
+    }
+    try {
+      const res = await api.adminOverview();
       setData(res);
       setError(null);
-    }).
-    catch((err) => setError(err.message)).
-    finally(() => setLoading(false));
+      setLastUpdated(new Date());
+    } catch (err) {
+      if (initial) {
+        setError((err as Error).message);
+      }
+    } finally {
+      if (initial) setLoading(false);
+    }
   }, []);
 
-  useEffect(load, [load]);
+  useEffect(() => {
+    load(true);
+    const id = window.setInterval(() => {
+      load(false);
+    }, POLL_INTERVAL_MS);
+    return () => window.clearInterval(id);
+  }, [load]);
+
+  const lastUpdatedLabel = lastUpdated
+    ? lastUpdated.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' })
+    : '...';
 
   return (
     <PortalLayout portalLabel="Super Admin" navItems={adminNav}>
       {loading ?
       <LoadingState /> :
       error ?
-      <ErrorState message={error} onRetry={load} /> :
+      <ErrorState message={error} onRetry={() => load(true)} /> :
 
       <div className="space-y-6">
           <div>
@@ -43,6 +62,13 @@ export function AdminDashboard() {
             <p className="mt-1 text-sm text-slate-600">
               {eventConfig.name} · {eventConfig.subtitle}
             </p>
+            <div className="mt-3 inline-flex items-center gap-2 rounded-full border border-emerald-200 bg-emerald-50 px-3 py-1 text-xs font-semibold text-emerald-700">
+              <span className="relative flex h-2 w-2">
+                <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-75" />
+                <span className="relative inline-flex h-2 w-2 rounded-full bg-emerald-500" />
+              </span>
+              Live · auto-refreshes every 15s · updated {lastUpdatedLabel}
+            </div>
           </div>
 
           <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">

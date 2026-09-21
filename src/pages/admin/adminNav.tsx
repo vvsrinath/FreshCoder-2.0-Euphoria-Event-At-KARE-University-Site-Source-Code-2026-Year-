@@ -2,7 +2,6 @@ import React from 'react';
 import {
   CalendarRangeIcon,
   ClipboardListIcon,
-  DatabaseIcon,
   FileBarChart2Icon,
   LayoutDashboardIcon,
   ScrollTextIcon,
@@ -18,7 +17,6 @@ export const adminNav: NavItem[] = [
 { to: '/admin/staff', label: 'Staff', icon: <UserCogIcon className="h-4 w-4" /> },
 { to: '/admin/events', label: 'Events', icon: <CalendarRangeIcon className="h-4 w-4" /> },
 { to: '/staff/tests', label: 'Tests', icon: <ClipboardListIcon className="h-4 w-4" /> },
-{ to: '/staff/questions', label: 'Question Bank', icon: <DatabaseIcon className="h-4 w-4" /> },
 { to: '/staff/results', label: 'Results', icon: <FileBarChart2Icon className="h-4 w-4" /> },
-{ to: '/staff/security', label: 'Security Events', icon: <ShieldAlertIcon className="h-4 w-4" /> },
+{ to: '/staff/security', label: 'Security', icon: <ShieldAlertIcon className="h-4 w-4" /> },
 { to: '/staff/audit', label: 'Audit Logs', icon: <ScrollTextIcon className="h-4 w-4" /> }];

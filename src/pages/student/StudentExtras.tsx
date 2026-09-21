@@ -23,12 +23,12 @@ export function StudentProfile() {
             </div>
             <div>
               <div className="flex items-center gap-2">
-                <h2 className="text-xl font-bold text-navy-900">{user?.name || 'Arun Kumar'}</h2>
+                <h2 className="text-xl font-bold text-navy-900">{user?.name || 'Participant'}</h2>
                 <span className="inline-flex items-center gap-1 rounded-full bg-emerald-50 px-2.5 py-0.5 text-xs font-semibold text-emerald-700 border border-emerald-200">
                   <ShieldCheckIcon className="h-3.5 w-3.5" /> Verified
                 </span>
               </div>
-              <p className="text-xs font-mono text-slate-500 mt-1">ID: {user?.id || 'ST2026001'}</p>
+              <p className="text-xs font-mono text-slate-500 mt-1">ID: {user?.id || '—'}</p>
             </div>
           </div>
 

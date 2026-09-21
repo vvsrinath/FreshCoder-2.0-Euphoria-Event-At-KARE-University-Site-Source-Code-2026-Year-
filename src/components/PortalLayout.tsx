@@ -39,7 +39,7 @@ export function PortalLayout({ portalLabel, navItems, children, headerRight, nav
 
   const isStudent = user?.role === 'STUDENT';
   const roleDisplay = isStudent ? 'Student' : 'Staff';
-  const defaultId = isStudent ? 'ST2026001' : 'SF2026';
+  const defaultId = '—';
 
   // Student pages: HackerRank-style — block copy/paste/cut + log telemetry + disable text selection
   useEffect(() => {

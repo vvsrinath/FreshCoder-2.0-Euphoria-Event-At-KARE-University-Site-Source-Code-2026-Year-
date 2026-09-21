@@ -189,7 +189,7 @@ export function Exam() {
             <BrandMark tone="light" />
             <span className="h-6 w-px bg-white/20 hidden sm:block" aria-hidden="true" />
             <span className="text-sm font-bold text-slate-200 hidden sm:block">
-              {state.testName || 'Python Fundamentals'}
+              {state.testName || 'Examination'}
             </span>
           </div>
 
