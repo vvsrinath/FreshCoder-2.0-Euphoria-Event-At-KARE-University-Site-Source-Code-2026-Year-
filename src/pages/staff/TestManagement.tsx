@@ -74,19 +74,31 @@ export function TestManagement() {
   const [statusFilter, setStatusFilter] = useState('');
   const [search, setSearch] = useState('');
 
-  const load = useCallback(() => {
-    setLoading(true);
-    api
-      .tests()
-      .then((res) => {
-        setTests(res.tests);
-        setError(null);
-      })
-      .catch((err) => setError(err.message))
-      .finally(() => setLoading(false));
+  const load = useCallback(async (initial = false) => {
+    if (initial) {
+      setLoading(true);
+      setError(null);
+    }
+    try {
+      const res = await api.tests();
+      setTests(res.tests);
+      setError(null);
+    } catch (err) {
+      if (initial) {
+        setError((err as Error).message);
+      }
+    } finally {
+      if (initial) setLoading(false);
+    }
   }, []);
 
-  useEffect(load, [load]);
+  useEffect(() => {
+    load(true);
+    const id = window.setInterval(() => {
+      load(false);
+    }, 15000);
+    return () => window.clearInterval(id);
+  }, [load]);
 
   const startTest = useCallback(
     async (row: Test) => {
@@ -153,7 +165,7 @@ export function TestManagement() {
   if (error) {
     return (
       <PortalLayout portalLabel="Staff Portal" navItems={staffNav} navFooter={<StaffNavFooter />}>
-        <ErrorState message={error} onRetry={load} />
+        <ErrorState message={error} onRetry={() => load(true)} />
       </PortalLayout>
     );
   }
@@ -170,6 +182,13 @@ export function TestManagement() {
             <p className="mt-1 text-xs sm:text-sm text-slate-500 font-medium">
               Create, configure, schedule and launch assessments.
             </p>
+            <span className="mt-2 inline-flex items-center gap-1.5 rounded-full border border-emerald-200 bg-emerald-50 px-3 py-1 text-[11px] font-semibold text-emerald-700">
+              <span className="relative flex h-2 w-2">
+                <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-75" />
+                <span className="relative inline-flex h-2 w-2 rounded-full bg-emerald-500" />
+              </span>
+              Live · auto-refreshes every 15s
+            </span>
           </div>
           <button
             type="button"
