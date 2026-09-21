@@ -8,6 +8,7 @@ import {
   MapPinIcon,
   CheckCircle2Icon,
   ArrowRightIcon,
+  CalendarClockIcon,
 } from 'lucide-react';
 import { PortalLayout } from '../../components/PortalLayout';
 import { Card } from '../../components/Card';
@@ -40,6 +41,23 @@ export function StudentDashboard() {
 
   const studentName = data?.student?.name || 'Arun Kumar';
   const studentId = data?.student?.id || 'ST2026001';
+
+  const test = data?.tests?.[0];
+  const testName = test?.name || 'Python Fundamentals';
+  const testStatus = test?.status || 'SCHEDULED';
+  const live = testStatus === 'ACTIVE';
+  const paused = testStatus === 'PAUSED';
+  const chip =
+    live
+      ? { label: 'Live now', cls: 'bg-emerald-100 text-emerald-700 border-emerald-200' }
+      : paused
+        ? { label: 'Paused by staff', cls: 'bg-amber-100 text-amber-800 border-amber-200' }
+        : testStatus === 'COMPLETED'
+          ? { label: 'Completed', cls: 'bg-slate-100 text-slate-600 border-slate-200' }
+          : { label: 'Scheduled', cls: 'bg-amber-100 text-amber-800 border-amber-200' };
+  const questionCount = test?.questionCount ?? 30;
+  const durationMinutes = test?.durationMinutes ?? 60;
+  const scheduledStart = test?.scheduledStart ? formatDateTime(test.scheduledStart) : null;
 
   return (
     <PortalLayout
@@ -81,12 +99,12 @@ export function StudentDashboard() {
                 </div>
                 <div>
                   <div className="flex flex-wrap items-center gap-2.5">
-                    <h2 className="text-xl font-bold text-navy-900">Python Fundamentals</h2>
-                    <span className="rounded-full bg-amber-100 px-3 py-0.5 text-xs font-bold text-amber-800 border border-amber-200">
-                      Not Started
+                    <h2 className="text-xl font-bold text-navy-900">{testName}</h2>
+                    <span className={`rounded-full px-3 py-0.5 text-xs font-bold border ${chip.cls}`}>
+                      {chip.label}
                     </span>
                   </div>
-                  <p className="text-xs font-semibold text-slate-400 mt-0.5">Euphoria 2026</p>
+                  <p className="text-xs font-semibold text-slate-400 mt-0.5">{eventConfig.name}</p>
 
                   <div className="mt-4 flex flex-wrap gap-x-6 gap-y-2 text-xs text-slate-600">
                     <span className="inline-flex items-center gap-1.5 font-medium">
@@ -97,6 +115,12 @@ export function StudentDashboard() {
                       <ClockIcon className="h-4 w-4 text-slate-400" />
                       {eventConfig.time}
                     </span>
+                    {scheduledStart && (
+                      <span className="inline-flex items-center gap-1.5 font-medium">
+                        <CalendarClockIcon className="h-4 w-4 text-slate-400" />
+                        {live ? `Live since ${scheduledStart}` : paused ? `Paused · started ${scheduledStart}` : `Starts ${scheduledStart}`}
+                      </span>
+                    )}
                     <span className="inline-flex items-center gap-1.5 font-medium">
                       <MapPinIcon className="h-4 w-4 text-slate-400" />
                       {eventConfig.venueBlock}, {eventConfig.venueRooms}
@@ -108,13 +132,13 @@ export function StudentDashboard() {
               {/* Right Metrics & CTA */}
               <div className="flex items-center justify-between sm:justify-end gap-6 border-t lg:border-t-0 pt-4 lg:pt-0 border-slate-100">
                 <div className="text-center px-2">
-                  <p className="text-2xl font-black text-navy-900 tabular-nums">30</p>
+                  <p className="text-2xl font-black text-navy-900 tabular-nums">{questionCount}</p>
                   <p className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">
                     Questions
                   </p>
                 </div>
                 <div className="text-center px-2">
-                  <p className="text-2xl font-black text-navy-900 tabular-nums">60</p>
+                  <p className="text-2xl font-black text-navy-900 tabular-nums">{durationMinutes}</p>
                   <p className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">
                     Minutes
                   </p>

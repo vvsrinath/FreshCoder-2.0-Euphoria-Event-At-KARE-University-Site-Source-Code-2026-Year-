@@ -70,6 +70,7 @@ export function WaitingRoom() {
 
   const test = data.test;
   const live = test.status === 'ACTIVE';
+  const paused = test.status === 'PAUSED';
   const finished = ['SUBMITTED', 'FORCE_SUBMITTED', 'TIME_EXPIRED'].includes(data.attemptStatus);
 
   return (
@@ -84,7 +85,7 @@ export function WaitingRoom() {
       <main className="mx-auto max-w-4xl px-6 py-10">
         <div className="text-center">
           <p className="text-xs font-semibold uppercase tracking-[0.2em] text-brand-600">
-            {live ? 'Test is open' : 'Waiting for test'}
+            {live ? 'Test is open' : paused ? 'Test paused' : 'Waiting for test'}
           </p>
           <h1 className="mt-2 text-3xl font-bold text-navy-800">{test.name}</h1>
           <p className="mt-1 text-sm text-slate-600">
@@ -120,6 +121,14 @@ export function WaitingRoom() {
                 </Button>
               </> :
 
+            paused ?
+            <>
+                <p className="text-sm text-slate-300">The test is paused by examination staff.</p>
+                <p className="mt-3 text-xs text-slate-400">
+                  It will resume at the scheduled time. Keep this page open — the start button appears when staff reopen the test.
+                </p>
+              </> :
+
             <>
                 <p className="flex items-center justify-center gap-2 text-xs font-semibold uppercase tracking-[0.2em] text-slate-400">
                   <CalendarClockIcon className="h-4 w-4" /> Test starts in
@@ -128,7 +137,9 @@ export function WaitingRoom() {
                   {formatClock(countdown)}
                 </p>
                 <p className="mt-3 text-xs text-slate-400">
-                  This page refreshes automatically. The start button appears when staff open the test.
+                  {test.scheduledStart
+                    ? `Scheduled for ${formatDateTime(test.scheduledStart)}. Staff can only open it at that time.`
+                    : 'This page refreshes automatically. The start button appears when staff open the test.'}
                 </p>
               </>
             }
