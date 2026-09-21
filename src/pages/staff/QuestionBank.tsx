@@ -89,10 +89,10 @@ export function QuestionBank() {
         <div className="flex flex-wrap items-center justify-between gap-4">
           <div>
             <h1 className="text-2xl sm:text-3xl font-black text-navy-900 tracking-tight">
-              Question Bank
+              Questions
             </h1>
             <p className="mt-1 text-xs sm:text-sm text-slate-500 font-medium">
-              Manage reusable questions across programming categories and topics.
+              Your question bank — add via CSV or manual entry, then pick for tests.
             </p>
           </div>
           <button

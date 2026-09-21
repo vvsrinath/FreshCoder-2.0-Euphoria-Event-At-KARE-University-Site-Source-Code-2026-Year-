@@ -13,8 +13,8 @@ import type { NavItem } from '../../components/PortalLayout';
 
 export const staffNav: NavItem[] = [
 { to: '/staff', label: 'Dashboard', icon: <LayoutDashboardIcon className="h-4 w-4" /> },
-{ to: '/staff/tests', label: 'Test Management', icon: <ClipboardListIcon className="h-4 w-4" /> },
-{ to: '/staff/questions', label: 'Question Bank', icon: <DatabaseIcon className="h-4 w-4" /> },
+{ to: '/staff/tests', label: 'Tests', icon: <ClipboardListIcon className="h-4 w-4" /> },
+{ to: '/staff/questions', label: 'Questions', icon: <DatabaseIcon className="h-4 w-4" /> },
 { to: '/staff/live', label: 'Live Monitoring', icon: <ActivityIcon className="h-4 w-4" /> },
 { to: '/staff/edit-requests', label: 'Edit Requests', icon: <PencilLineIcon className="h-4 w-4" /> },
 { to: '/staff/results', label: 'Results', icon: <FileBarChart2Icon className="h-4 w-4" /> },

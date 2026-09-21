@@ -214,7 +214,7 @@ export function TestBuilder() {
               <div className="rounded-xl bg-blue-50 p-4 ring-1 ring-blue-200">
                 <p className="text-sm font-bold text-blue-900">How to add questions</p>
                 <p className="mt-1 text-xs leading-relaxed text-blue-700">
-                  Go to <strong>Question Bank</strong> → add questions via <strong>CSV file</strong> or <strong>manual entry</strong>. Then pick them for this test after creation.
+                  Go to <strong>Questions</strong> → add via <strong>CSV file</strong> or <strong>manual entry</strong>. Then pick them for this test.
                 </p>
               </div>
 
