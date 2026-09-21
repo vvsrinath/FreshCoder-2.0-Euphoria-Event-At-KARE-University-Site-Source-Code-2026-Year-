@@ -60,7 +60,7 @@ export function QuestionCard({
             </span>
           ) : null}
           {editGranted ? (
-            <span className="rounded-full bg-blue-50 px-3 py-1 text-xs font-bold text-blue-700 border border-blue-200">
+            <span className="rounded-full border border-black/10 bg-white px-3 py-1 text-xs font-semibold text-slate-600">
               Edit Approved
             </span>
           ) : null}
@@ -71,7 +71,7 @@ export function QuestionCard({
             type="checkbox"
             checked={flagged}
             onChange={onToggleFlag}
-            className="h-4 w-4 rounded border-slate-300 text-blue-600 focus:ring-blue-500"
+            className="h-4 w-4 rounded border-slate-300 text-brand-600 focus:ring-brand-500"
           />
           <FlagIcon className={cn('h-3.5 w-3.5', flagged ? 'text-orange-500 fill-orange-500' : 'text-slate-400')} />
           Flag for Review
@@ -132,7 +132,7 @@ export function QuestionCard({
                   className={cn(
                     'flex cursor-pointer items-center gap-3.5 rounded-xl border p-4 text-sm font-medium transition-all duration-150',
                     value === String(i)
-                      ? 'border-blue-500 bg-blue-50/70 text-navy-900 ring-1 ring-blue-500 shadow-xs'
+                      ? 'border-brand-500 bg-brand-50/70 text-navy-900 ring-1 ring-brand-500 shadow-xs'
                       : 'border-slate-200 bg-white text-slate-700 hover:border-slate-300 hover:bg-slate-50/50',
                     readOnly && 'cursor-not-allowed opacity-70'
                   )}
@@ -142,7 +142,7 @@ export function QuestionCard({
                     name={`q-${question.id}`}
                     checked={value === String(i)}
                     onChange={() => onChange(String(i))}
-                    className="h-4 w-4 border-slate-300 text-blue-600 focus:ring-blue-500"
+                    className="h-4 w-4 border-slate-300 text-brand-600 focus:ring-brand-500"
                   />
                   <span className="font-mono text-xs font-bold text-slate-400">
                     {String.fromCharCode(65 + i)}
@@ -161,7 +161,7 @@ export function QuestionCard({
                 className={cn(
                   'flex flex-1 cursor-pointer items-center justify-center gap-2 rounded-xl border p-4 text-sm font-bold capitalize transition-all duration-150',
                   value === option
-                    ? 'border-blue-500 bg-blue-50/70 text-navy-900 ring-1 ring-blue-500 shadow-xs'
+                    ? 'border-brand-500 bg-brand-50/70 text-navy-900 ring-1 ring-brand-500 shadow-xs'
                     : 'border-slate-200 bg-white text-slate-700 hover:border-slate-300',
                   readOnly && 'cursor-not-allowed opacity-70'
                 )}
@@ -171,7 +171,7 @@ export function QuestionCard({
                   name={`q-${question.id}`}
                   checked={value === option}
                   onChange={() => onChange(option)}
-                  className="h-4 w-4 border-slate-300 text-blue-600 focus:ring-blue-500"
+                  className="h-4 w-4 border-slate-300 text-brand-600 focus:ring-brand-500"
                 />
                 {option}
               </label>
@@ -191,7 +191,7 @@ export function QuestionCard({
               placeholder="Type your answer here..."
               className={cn(
                 'w-full rounded-xl border border-slate-200 bg-white p-4 font-mono text-sm text-navy-900 shadow-xs',
-                'transition-all duration-150 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-100',
+                'transition-all duration-150 focus:border-brand-500 focus:outline-none focus:ring-2 focus:ring-brand-100',
                 readOnly && 'cursor-not-allowed bg-slate-50 text-slate-500'
               )}
             />
@@ -210,7 +210,7 @@ export function QuestionCard({
               placeholder="Type your answer here..."
               className={cn(
                 'h-12 w-full rounded-xl border border-slate-200 bg-white px-4 font-mono text-sm text-navy-900 shadow-xs',
-                'transition-all duration-150 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-100',
+                'transition-all duration-150 focus:border-brand-500 focus:outline-none focus:ring-2 focus:ring-brand-100',
                 readOnly && 'cursor-not-allowed bg-slate-50 text-slate-500'
               )}
             />

@@ -74,8 +74,8 @@ export function WaitingRoom() {
   const finished = ['SUBMITTED', 'FORCE_SUBMITTED', 'TIME_EXPIRED'].includes(data.attemptStatus);
 
   return (
-    <div className="min-h-screen w-full bg-slate-50">
-      <header className="flex h-16 items-center justify-between border-b border-slate-200 bg-white px-6">
+    <div className="min-h-screen w-full bg-[#f5f5f7]">
+      <header className="flex h-16 items-center justify-between border-b border-black/5 bg-white px-6">
         <BrandMark />
         <Button variant="ghost" size="sm" icon={<ArrowLeftIcon className="h-4 w-4" />} onClick={() => navigate('/student')}>
           Back to dashboard
@@ -94,7 +94,7 @@ export function WaitingRoom() {
         </div>
 
         <Card className="mt-8 overflow-hidden">
-          <div className="grid gap-px bg-slate-200 sm:grid-cols-4">
+          <div className="grid gap-px bg-black/5 sm:grid-cols-4">
             {[
             ['Scheduled start', test.scheduledStart ? formatDateTime(test.scheduledStart) : 'On staff command'],
             ['Duration', `${test.durationMinutes} minutes`],

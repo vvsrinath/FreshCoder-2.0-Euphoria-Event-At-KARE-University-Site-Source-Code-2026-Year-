@@ -33,14 +33,14 @@ export function DataTable<T>({
       <table className="w-full min-w-[720px] border-collapse text-left">
         {caption ? <caption className="sr-only">{caption}</caption> : null}
         <thead>
-          <tr className="border-b border-slate-200 bg-slate-50">
+          <tr className="border-b border-black/5 bg-white">
             {columns.map((col) =>
             <th
               key={col.key}
               scope="col"
               style={col.width ? { width: col.width } : undefined}
               className={cn(
-                'px-4 py-3 text-xs font-semibold uppercase tracking-wide text-slate-500',
+                'px-4 py-3 text-[11px] font-semibold uppercase tracking-wider text-slate-400',
                 col.align === 'right' && 'text-right',
                 col.align === 'center' && 'text-center'
               )}>
@@ -52,7 +52,7 @@ export function DataTable<T>({
         </thead>
         <tbody>
           {rows.map((row) =>
-          <tr key={rowKey(row)} className="border-b border-slate-100 last:border-0">
+          <tr key={rowKey(row)} className="border-b border-black/5 last:border-0">
               {columns.map((col) =>
             <td
               key={col.key}

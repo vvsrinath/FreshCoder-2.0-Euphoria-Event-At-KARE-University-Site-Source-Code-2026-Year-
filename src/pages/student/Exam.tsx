@@ -152,7 +152,7 @@ export function Exam() {
               <button
                 type="button"
                 onClick={() => navigate('/student')}
-                className="w-full sm:w-auto inline-flex items-center justify-center rounded-xl bg-blue-600 px-7 py-3 text-sm font-bold text-white shadow-lg shadow-blue-600/30 transition-all hover:bg-blue-500"
+                className="w-full sm:w-auto inline-flex items-center justify-center rounded-xl bg-brand-500 px-7 py-3 text-sm font-bold text-white shadow-lg shadow-brand-500/20 transition-all hover:bg-brand-600"
               >
                 View Dashboard
               </button>
@@ -243,7 +243,7 @@ export function Exam() {
                   onChange={(e) => setStaffPin(e.target.value)}
                   onKeyDown={(e) => { if (e.key === 'Enter') handleUnlock(); }}
                   placeholder="Enter Staff PIN to Unlock"
-                  className="w-full rounded-xl border border-white/10 bg-white/5 px-4 py-3 text-sm text-white placeholder:text-slate-400 focus:border-blue-500 focus:outline-none"
+                  className="w-full rounded-xl border border-white/10 bg-white/5 px-4 py-3 text-sm text-white placeholder:text-slate-400 focus:border-brand-500 focus:outline-none"
                   autoComplete="off"
                 />
                 <button
@@ -251,7 +251,7 @@ export function Exam() {
                   id="unlock-btn"
                   onClick={handleUnlock}
                   disabled={unlocking}
-                  className="w-full rounded-xl bg-blue-600 py-3.5 text-sm font-bold text-white shadow-lg shadow-blue-600/30 hover:bg-blue-500 transition-all disabled:opacity-60"
+                  className="w-full rounded-xl bg-brand-500 py-3.5 text-sm font-bold text-white shadow-lg shadow-brand-500/20 hover:bg-brand-600 transition-all disabled:opacity-60"
                 >
                   {unlocking ? 'Verifying...' : 'Unlock & Resume Exam'}
                 </button>
@@ -344,7 +344,7 @@ export function Exam() {
                             type="button"
                             disabled={state.current === state.questions.length - 1}
                             onClick={() => goTo(state.current + 1)}
-                            className="inline-flex items-center gap-2 rounded-xl bg-blue-600 px-5 py-2.5 text-sm font-bold text-white shadow-md shadow-blue-600/30 hover:bg-blue-500 disabled:opacity-40"
+                            className="inline-flex items-center gap-2 rounded-xl bg-brand-500 px-5 py-2.5 text-sm font-bold text-white shadow-md shadow-brand-500/20 hover:bg-brand-600 disabled:opacity-40"
                           >
                             Next
                             <ArrowRightIcon className="h-4 w-4" />
@@ -354,7 +354,7 @@ export function Exam() {
                         <button
                           type="button"
                           onClick={handleLockNext}
-                          className="inline-flex items-center gap-2 rounded-xl bg-blue-600 px-6 py-2.5 text-sm font-bold text-white shadow-lg shadow-blue-600/30 hover:bg-blue-500 hover:scale-[1.01] transition-all"
+                          className="inline-flex items-center gap-2 rounded-xl bg-brand-500 px-6 py-2.5 text-sm font-bold text-white shadow-lg shadow-brand-500/20 hover:bg-brand-600 hover:scale-[1.01] transition-all"
                         >
                           Lock & Next
                           <ArrowRightIcon className="h-4 w-4" />
@@ -383,7 +383,7 @@ export function Exam() {
                 <button
                   type="button"
                   onClick={closeLockedDialog}
-                  className="w-full rounded-xl bg-blue-600 py-3 text-sm font-bold text-white shadow-md shadow-blue-600/20 hover:bg-blue-500"
+                  className="w-full rounded-xl bg-brand-500 py-3 text-sm font-bold text-white shadow-md shadow-brand-500/20 hover:bg-brand-600"
                 >
                   OK
                 </button>
@@ -408,7 +408,7 @@ export function Exam() {
             <div className="w-full max-w-md rounded-3xl bg-white p-7 shadow-2xl animate-in fade-in zoom-in-95">
               <div className="flex items-center justify-between border-b border-slate-100 pb-4">
                 <div className="flex items-center gap-3">
-                  <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-blue-50 text-blue-600 border border-blue-100">
+                  <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-brand-50 text-brand-600 ring-1 ring-brand-100">
                     <FileTextIcon className="h-5 w-5" />
                   </span>
                   <h3 className="text-lg font-bold text-navy-900">Request Answer Change</h3>
@@ -439,7 +439,7 @@ export function Exam() {
                     value={editReason}
                     onChange={(e) => setEditReason(e.target.value)}
                     placeholder="Enter reason for change (optional)..."
-                    className="w-full rounded-xl border border-slate-200 p-3.5 text-sm text-slate-800 placeholder-slate-400 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-100"
+                    className="w-full rounded-xl border border-slate-200 p-3.5 text-sm text-slate-800 placeholder-slate-400 focus:border-brand-500 focus:outline-none focus:ring-2 focus:ring-brand-100"
                   />
                   <div className="mt-1 text-right text-xs text-slate-400">
                     {editReason.length}/200
@@ -457,7 +457,7 @@ export function Exam() {
                   <button
                     type="button"
                     onClick={sendEditRequest}
-                    className="rounded-xl bg-blue-600 px-6 py-2.5 text-sm font-bold text-white shadow-md shadow-blue-600/30 hover:bg-blue-500"
+                    className="rounded-xl bg-brand-500 px-6 py-2.5 text-sm font-bold text-white shadow-md shadow-brand-500/20 hover:bg-brand-600"
                   >
                     Send Request
                   </button>

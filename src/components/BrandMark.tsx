@@ -28,7 +28,7 @@ export function BrandMark({
             light ? 'text-white' : 'text-navy-900'
           )}
         >
-          FRESH <span className="text-sky-400">CODERS 2.0</span>
+          FRESH <span className={light ? 'text-brand-400' : 'text-brand-500'}>CODERS 2.0</span>
         </span>
         <span
           className={cn(

@@ -1,5 +1,5 @@
 /* @import url() FONT IMPORTS MUST ALWAYS BE AT THE VERY TOP OF THIS FILE, ABOVE THE TAILWIND IMPORTS — DO NOT DELETE THIS COMMENT */
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
 
 /* CRITICAL: THE FOLLOWING TAILWIND IMPORTS MUST NEVER BE DELETED OR REORDERED — DO NOT DELETE THIS COMMENT */
 @import 'tailwindcss/base';
@@ -14,12 +14,14 @@ body,
   height: 100%;
 }
 body {
-  font-family: 'Inter', system-ui, -apple-system, sans-serif;
+  font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'SF Pro Text', Inter, 'Segoe UI', system-ui, sans-serif;
   -webkit-font-smoothing: antialiased;
-  color: #0f172a;
+  -moz-osx-font-smoothing: grayscale;
+  background-color: #f5f5f7;
+  color: #1d1d1f;
 }
 :focus-visible {
-  outline: 2px solid #2563eb;
+  outline: 2px solid #0071e3;
   outline-offset: 2px;
 }
 .fc-scroll::-webkit-scrollbar {
@@ -27,6 +29,9 @@ body {
   height: 8px;
 }
 .fc-scroll::-webkit-scrollbar-thumb {
-  background: #cbd5e1;
+  background: #d0d0d5;
   border-radius: 999px;
+}
+.fc-scroll::-webkit-scrollbar-thumb:hover {
+  background: #b6b6bd;
 }

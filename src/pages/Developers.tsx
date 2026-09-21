@@ -16,7 +16,7 @@ import { brand, contact, team } from '../data/eventConfig';
 export function Developers() {
   const [mobileOpen, setMobileOpen] = useState(false);
   return (
-    <div className="min-h-screen bg-[#f7f8fc] text-slate-900 font-sans flex flex-col selection:bg-indigo-500 selection:text-white">
+    <div className="min-h-screen bg-[#f5f5f7] text-slate-900 font-sans flex flex-col selection:bg-brand-500 selection:text-white">
       {/* ---------- Navigation ---------- */}
       <header className="sticky top-0 z-40 bg-white/80 backdrop-blur-xl border-b border-slate-200/70">
         <div className="mx-auto flex h-16 max-w-7xl items-center justify-between gap-4 px-5">
@@ -28,7 +28,7 @@ export function Developers() {
             <Link to="/" className="text-sm font-medium text-slate-600 transition-colors hover:text-slate-900">
               Home
             </Link>
-            <Link to="/developers" className="text-sm font-semibold text-indigo-600">
+            <Link to="/developers" className="text-sm font-semibold text-brand-600">
               Developers
             </Link>
             <Link to="/convenors" className="text-sm font-medium text-slate-600 transition-colors hover:text-slate-900">
@@ -60,7 +60,7 @@ export function Developers() {
             <nav className="absolute inset-x-0 top-16 z-40 border-b border-slate-200 bg-white px-5 py-4 shadow-lg lg:hidden">
               <div className="flex flex-col gap-1">
                 <Link to="/" onClick={() => setMobileOpen(false)} className="rounded-xl px-3 py-2.5 text-sm font-medium text-slate-700 hover:bg-slate-50">Home</Link>
-                <Link to="/developers" onClick={() => setMobileOpen(false)} className="rounded-xl bg-indigo-50 px-3 py-2.5 text-sm font-semibold text-indigo-700">Developers</Link>
+                <Link to="/developers" onClick={() => setMobileOpen(false)} className="rounded-xl bg-brand-50 px-3 py-2.5 text-sm font-semibold text-brand-700">Developers</Link>
                 <Link to="/convenors" onClick={() => setMobileOpen(false)} className="rounded-xl px-3 py-2.5 text-sm font-medium text-slate-700 hover:bg-slate-50">Convenors</Link>
                 <Link to="/login?portal=STAFF" onClick={() => setMobileOpen(false)} className="mt-2 rounded-xl bg-slate-50 px-3 py-2.5 text-sm font-semibold text-slate-700 sm:hidden">Staff Portal</Link>
               </div>
@@ -76,16 +76,14 @@ export function Developers() {
             className="absolute inset-0"
             style={{
               background:
-                'radial-gradient(42% 55% at 12% 12%, rgba(124,58,237,0.18), transparent 70%),' +
-                'radial-gradient(38% 50% at 88% 6%, rgba(14,165,233,0.20), transparent 70%),' +
-                'radial-gradient(50% 55% at 72% 92%, rgba(236,72,153,0.16), transparent 70%)',
+                'radial-gradient(50% 55% at 50% 40%, rgba(0,113,227,0.10), transparent 70%)',
             }}
           />
         </div>
         <div className="mx-auto max-w-7xl px-5 py-16 text-center lg:py-20">
           <h1 className="mx-auto max-w-3xl text-4xl font-black leading-[1.05] tracking-tight sm:text-5xl lg:text-6xl">
             Meet the developers
-            <span className="block bg-gradient-to-r from-indigo-600 via-sky-500 to-fuchsia-500 bg-clip-text text-transparent">
+            <span className="block text-slate-900">
               behind this platform
             </span>
           </h1>

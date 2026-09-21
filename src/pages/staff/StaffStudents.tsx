@@ -57,7 +57,7 @@ export function StaffStudents() {
                 placeholder="Search by ID or name…"
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
-                className="w-64 max-w-full rounded-xl border border-slate-200 bg-white py-2 pl-9 pr-4 text-sm font-medium text-slate-700 placeholder-slate-400 focus:border-blue-500 focus:outline-none"
+                className="w-64 max-w-full rounded-xl border border-slate-200 bg-white py-2 pl-9 pr-4 text-sm font-medium text-slate-700 placeholder-slate-400 focus:border-brand-500 focus:outline-none"
               />
               <SearchIcon className="absolute left-3 top-2.5 h-4 w-4 text-slate-400" />
             </div>

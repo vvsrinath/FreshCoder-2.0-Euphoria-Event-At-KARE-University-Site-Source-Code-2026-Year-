@@ -8,7 +8,7 @@ const legend: { state: QuestionState; label: string; dot: string; countColor: st
   { state: 'answered', label: 'Answered', dot: 'bg-emerald-500', countColor: 'text-emerald-700' },
   { state: 'unanswered', label: 'Not Answered', dot: 'border-2 border-slate-400 bg-white', countColor: 'text-slate-600' },
   { state: 'locked', label: 'Locked', dot: 'bg-amber-500', countColor: 'text-amber-700' },
-  { state: 'current', label: 'Current', dot: 'bg-blue-600', countColor: 'text-blue-700' },
+  { state: 'current', label: 'Current', dot: 'bg-brand-500', countColor: 'text-brand-700' },
   { state: 'flagged', label: 'Flagged', dot: 'bg-orange-500', countColor: 'text-orange-700' },
 ];
 
@@ -64,7 +64,7 @@ export function QuestionNavigator({
                 className={cn(
                   'relative flex h-10 w-10 items-center justify-center rounded-xl text-xs font-bold tabular-nums transition-all duration-150',
                   isCurrent
-                    ? 'border-2 border-blue-600 bg-blue-600 text-white shadow-md shadow-blue-500/30 ring-2 ring-blue-200'
+                    ? 'border-2 border-brand-500 bg-brand-500 text-white shadow-md shadow-brand-500/30 ring-2 ring-brand-200'
                     : isAnswered
                     ? 'bg-emerald-500 text-white shadow-xs hover:bg-emerald-600'
                     : isLocked

@@ -212,9 +212,9 @@ export function TestBuilder() {
                 </div>
               </div>
 
-              <div className="rounded-xl bg-blue-50 p-4 ring-1 ring-blue-200">
-                <p className="text-sm font-bold text-blue-900">After creating the test</p>
-                <p className="mt-1 text-xs leading-relaxed text-blue-700">
+              <div className="rounded-xl bg-white p-4 ring-1 ring-black/5">
+                <p className="text-sm font-semibold text-navy-900">After creating the test</p>
+                <p className="mt-1 text-xs leading-relaxed text-slate-600">
                   You land in the test workspace, where you add questions one by one or import from a
                   CSV, then configure delivery and go live.
                 </p>

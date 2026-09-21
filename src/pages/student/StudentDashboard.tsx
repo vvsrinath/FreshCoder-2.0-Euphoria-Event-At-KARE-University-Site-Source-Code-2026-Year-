@@ -63,12 +63,12 @@ export function StudentDashboard() {
   const paused = testStatus === 'PAUSED';
   const chip =
     live
-      ? { label: 'Live now', cls: 'bg-emerald-100 text-emerald-700 border-emerald-200' }
+      ? { label: 'Live now', cls: 'bg-emerald-500' }
       : paused
-        ? { label: 'Paused by staff', cls: 'bg-amber-100 text-amber-800 border-amber-200' }
+        ? { label: 'Paused by staff', cls: 'bg-amber-500' }
         : testStatus === 'COMPLETED'
-          ? { label: 'Completed', cls: 'bg-slate-100 text-slate-600 border-slate-200' }
-          : { label: 'Scheduled', cls: 'bg-amber-100 text-amber-800 border-amber-200' };
+          ? { label: 'Completed', cls: 'bg-slate-400' }
+          : { label: 'Scheduled', cls: 'bg-slate-400' };
   const questionCount = test?.questionCount ?? 0;
   const durationMinutes = test?.durationMinutes ?? 0;
   const scheduledStart = test?.scheduledStart ? formatDateTime(test.scheduledStart) : null;
@@ -89,8 +89,8 @@ export function StudentDashboard() {
           {/* Welcome Greeting Header Card */}
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
             <div>
-              <h1 className="text-2xl sm:text-3xl font-black text-navy-900 tracking-tight flex items-center gap-2">
-                Welcome, {studentName} <span className="text-amber-500">👋</span>
+              <h1 className="text-2xl sm:text-3xl font-semibold text-navy-900 tracking-tight flex items-center gap-2">
+                Welcome, {studentName}
               </h1>
               <p className="mt-1 text-sm text-slate-500 font-medium">
                 Ready to test your skills? Keep going!
@@ -98,27 +98,28 @@ export function StudentDashboard() {
             </div>
 
             <div className="shrink-0 space-x-2">
-              <span className="inline-flex items-center gap-1.5 rounded-full border border-emerald-300 bg-emerald-50 px-3.5 py-1.5 text-xs font-bold text-emerald-700 shadow-sm">
-                <CheckCircle2Icon className="h-4 w-4 text-emerald-600" />
+              <span className="inline-flex items-center gap-1.5 rounded-full border border-black/10 bg-white px-3.5 py-1.5 text-xs font-medium text-slate-500 shadow-sm">
+                <CheckCircle2Icon className="h-4 w-4 text-slate-400" />
                 Eligible Participant
               </span>
-              <span className="inline-flex items-center gap-1.5 rounded-full border border-slate-200 bg-white px-3.5 py-1.5 text-xs font-semibold text-slate-500 shadow-sm">
+              <span className="inline-flex items-center gap-1.5 rounded-full border border-black/10 bg-white px-3.5 py-1.5 text-xs font-medium text-slate-500 shadow-sm">
                 Auto-refreshes every 15s
               </span>
             </div>
           </div>
 
           {test ? (
-            <div className="rounded-2xl border border-slate-200 bg-white p-6 sm:p-7 shadow-lg shadow-slate-100 transition-all hover:shadow-xl">
+            <div className="rounded-2xl bg-white p-6 sm:p-7 shadow-sm ring-1 ring-black/5 transition-all hover:ring-black/10">
               <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6">
                 <div className="flex items-start gap-4">
-                  <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-emerald-500 text-white shadow-md shadow-emerald-500/20">
+                  <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-navy-900 text-white shadow-md">
                     <CodeXmlIcon className="h-7 w-7" />
                   </div>
                   <div>
                     <div className="flex flex-wrap items-center gap-2.5">
-                      <h2 className="text-xl font-bold text-navy-900">{testName}</h2>
-                      <span className={`rounded-full px-3 py-0.5 text-xs font-bold border ${chip.cls}`}>
+                      <h2 className="text-xl font-semibold text-navy-900">{testName}</h2>
+                      <span className={`inline-flex items-center gap-1.5 rounded-full bg-white px-2.5 py-0.5 text-xs font-medium text-slate-600 ring-1 ring-inset ring-black/10`}>
+                        <span className={`h-1.5 w-1.5 rounded-full ${chip.cls}`} />
                         {chip.label}
                       </span>
                     </div>
@@ -147,16 +148,16 @@ export function StudentDashboard() {
                   </div>
                 </div>
 
-                <div className="flex items-center justify-between sm:justify-end gap-6 border-t lg:border-t-0 pt-4 lg:pt-0 border-slate-100">
+                <div className="flex items-center justify-between sm:justify-end gap-6 border-t lg:border-t-0 pt-4 lg:pt-0 border-black/5">
                   <div className="text-center px-2">
-                    <p className="text-2xl font-black text-navy-900 tabular-nums">{questionCount}</p>
-                    <p className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">
+                    <p className="text-2xl font-semibold text-navy-900 tabular-nums">{questionCount}</p>
+                    <p className="text-[11px] font-medium text-slate-400 uppercase tracking-wider">
                       Questions
                     </p>
                   </div>
                   <div className="text-center px-2">
-                    <p className="text-2xl font-black text-navy-900 tabular-nums">{durationMinutes}</p>
-                    <p className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">
+                    <p className="text-2xl font-semibold text-navy-900 tabular-nums">{durationMinutes}</p>
+                    <p className="text-[11px] font-medium text-slate-400 uppercase tracking-wider">
                       Minutes
                     </p>
                   </div>
@@ -167,7 +168,7 @@ export function StudentDashboard() {
                       if (!test.id) return;
                       navigate(`/student/tests/${test.id}/waiting`);
                     }}
-                    className="inline-flex items-center gap-2 rounded-xl bg-blue-600 px-5 py-3 text-sm font-bold text-white shadow-lg shadow-blue-600/30 transition-all hover:bg-blue-500 hover:scale-[1.02] disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:scale-100"
+                    className="inline-flex items-center gap-2 rounded-xl bg-brand-500 px-5 py-3 text-sm font-semibold text-white transition-colors hover:bg-brand-600 disabled:cursor-not-allowed disabled:opacity-50"
                   >
                     Enter Test
                     <ArrowRightIcon className="h-4 w-4" />
@@ -189,17 +190,17 @@ export function StudentDashboard() {
           )}
 
           {/* Important Instructions Card with Student Illustration */}
-          <div className="relative overflow-hidden rounded-2xl border border-amber-200/60 bg-gradient-to-r from-amber-50/40 via-white to-sky-50/40 p-6 sm:p-7 shadow-md">
+          <div className="relative overflow-hidden rounded-2xl bg-white p-6 sm:p-7 shadow-sm ring-1 ring-black/5">
             <div className="grid gap-6 md:grid-cols-[1.3fr_0.7fr] items-center">
               <div>
-                <h3 className="flex items-center gap-2 text-base font-bold text-navy-900">
-                  <span className="flex h-6 w-6 items-center justify-center rounded-full bg-amber-500 text-white shadow-sm">
+                <h3 className="flex items-center gap-2 text-base font-semibold text-navy-900">
+                  <span className="flex h-6 w-6 items-center justify-center rounded-full bg-black/5 text-navy-900">
                     <AlertCircleIcon className="h-4 w-4" />
                   </span>
                   Important Instructions
                 </h3>
 
-                <ul className="mt-4 space-y-2.5 text-xs sm:text-sm text-slate-700">
+                <ul className="mt-4 space-y-2.5 text-xs sm:text-sm text-slate-600">
                   <li className="flex items-start gap-2.5">
                     <span className="h-1.5 w-1.5 rounded-full bg-slate-400 mt-2 shrink-0" />
                     <span>Use a PC or laptop. Mobile devices are not allowed.</span>

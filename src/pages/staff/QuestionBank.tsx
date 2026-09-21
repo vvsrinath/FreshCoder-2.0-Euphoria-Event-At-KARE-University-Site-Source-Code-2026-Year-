@@ -101,7 +101,7 @@ export function QuestionBank() {
               setEditing(null);
               setEditorOpen(true);
             }}
-            className="inline-flex items-center gap-2 rounded-xl bg-blue-600 px-5 py-2.5 text-xs sm:text-sm font-bold text-white shadow-md shadow-blue-600/30 hover:bg-blue-500 transition-all"
+            className="inline-flex items-center gap-2 rounded-xl bg-brand-500 px-5 py-2.5 text-xs sm:text-sm font-semibold text-white shadow-md shadow-brand-500/20 hover:bg-brand-600 transition-all"
           >
             <PlusIcon className="h-4 w-4" />
             Add Question
@@ -116,7 +116,7 @@ export function QuestionBank() {
               <select
                 value={typeFilter}
                 onChange={(e) => setTypeFilter(e.target.value)}
-                className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm font-medium text-slate-700 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/10"
+                className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm font-medium text-slate-700 focus:border-brand-500 focus:outline-none focus:ring-2 focus:ring-brand-500/25"
               >
                 <option value="">All Types</option>
                 <option value="MCQ">MCQ</option>
@@ -133,7 +133,7 @@ export function QuestionBank() {
               <select
                 value={difficultyFilter}
                 onChange={(e) => setDifficultyFilter(e.target.value)}
-                className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm font-medium text-slate-700 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/10"
+                className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm font-medium text-slate-700 focus:border-brand-500 focus:outline-none focus:ring-2 focus:ring-brand-500/25"
               >
                 <option value="">All Levels</option>
                 <option value="EASY">Easy</option>
@@ -148,7 +148,7 @@ export function QuestionBank() {
                 placeholder="Search by title or topic..."
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
-                className="w-full rounded-xl border border-slate-200 bg-white pl-10 pr-4 py-2.5 text-sm font-medium text-slate-700 placeholder-slate-400 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/10"
+                className="w-full rounded-xl border border-slate-200 bg-white pl-10 pr-4 py-2.5 text-sm font-medium text-slate-700 placeholder-slate-400 focus:border-brand-500 focus:outline-none focus:ring-2 focus:ring-brand-500/25"
               />
               <SearchIcon className="absolute left-3.5 top-3 h-4 w-4 text-slate-400" />
               {(search || typeFilter || difficultyFilter) && (
@@ -224,18 +224,18 @@ export function QuestionBank() {
                       <div className="flex flex-col gap-1.5">
                         <span className="text-xs font-medium text-slate-600">{TYPE_LABELS[row.type] ?? row.type}</span>
                         {row.difficulty === 'EASY' ? (
-                          <span className="inline-flex w-fit items-center rounded-full bg-emerald-50 px-2 py-0.5 text-[11px] font-bold text-emerald-700 border border-emerald-200">Easy</span>
+                          <span className="inline-flex w-fit items-center rounded-full bg-slate-100 px-2 py-0.5 text-[11px] font-semibold text-slate-600">Easy</span>
                         ) : row.difficulty === 'MEDIUM' ? (
-                          <span className="inline-flex w-fit items-center rounded-full bg-amber-50 px-2 py-0.5 text-[11px] font-bold text-amber-700 border border-amber-200">Medium</span>
+                          <span className="inline-flex w-fit items-center rounded-full bg-slate-100 px-2 py-0.5 text-[11px] font-semibold text-slate-600">Medium</span>
                         ) : (
-                          <span className="inline-flex w-fit items-center rounded-full bg-red-50 px-2 py-0.5 text-[11px] font-bold text-red-700 border border-red-200">Hard</span>
+                          <span className="inline-flex w-fit items-center rounded-full bg-slate-100 px-2 py-0.5 text-[11px] font-semibold text-slate-600">Hard</span>
                         )}
                       </div>
                     </td>
                     <td className="px-5 py-4 text-right">
                       <div className="inline-flex items-center gap-1">
                         <button type="button" onClick={() => setPreview(row)} className="rounded-lg p-2 text-slate-500 hover:bg-slate-100 transition-colors" title="View"><EyeIcon className="h-4 w-4" /></button>
-                        <button type="button" onClick={() => { setEditing(row); setEditorOpen(true); }} className="rounded-lg bg-blue-50 p-2 text-blue-600 hover:bg-blue-100 transition-colors" title="Edit"><PencilIcon className="h-4 w-4" /></button>
+                        <button type="button" onClick={() => { setEditing(row); setEditorOpen(true); }} className="rounded-lg bg-black/5 p-2 text-slate-500 hover:bg-black/10 transition-colors" title="Edit"><PencilIcon className="h-4 w-4" /></button>
                         <button type="button" onClick={() => deleteQuestion(row)} className="rounded-lg p-2 text-slate-400 hover:bg-red-50 hover:text-red-500 transition-colors" title="Archive"><Trash2Icon className="h-4 w-4" /></button>
                       </div>
                     </td>

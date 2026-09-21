@@ -45,12 +45,12 @@ const STATUS_LABELS: Record<string, string> = {
 };
 
 const STATUS_BADGE: Record<string, string> = {
-  ACTIVE: 'bg-emerald-50 text-emerald-700 border-emerald-200',
-  PAUSED: 'bg-amber-50 text-amber-700 border-amber-200',
-  SCHEDULED: 'bg-blue-50 text-blue-700 border-blue-200',
-  DRAFT: 'bg-slate-100 text-slate-600 border-slate-200',
-  COMPLETED: 'bg-indigo-50 text-indigo-700 border-indigo-200',
-  ARCHIVED: 'bg-red-50 text-red-600 border-red-200',
+  ACTIVE: 'bg-white text-slate-600 border-black/10',
+  PAUSED: 'bg-white text-slate-600 border-black/10',
+  SCHEDULED: 'bg-white text-slate-600 border-black/10',
+  DRAFT: 'bg-white text-slate-600 border-black/10',
+  COMPLETED: 'bg-white text-slate-600 border-black/10',
+  ARCHIVED: 'bg-white text-slate-600 border-black/10',
 };
 
 const DIFFICULTY_LABELS: Record<string, string> = { EASY: 'Easy', MEDIUM: 'Medium', HARD: 'Hard' };
@@ -153,7 +153,7 @@ export function TestWorkspace() {
               onClick={() => setStep(s.id)}
               disabled={s.id === 'live' && !live && test.status !== 'COMPLETED' && !['ACTIVE', 'PAUSED'].includes(test.status)}
               className={`inline-flex items-center gap-2 rounded-xl px-4 py-2 text-sm font-bold transition-colors disabled:opacity-30 ${
-                step === s.id ? 'bg-blue-600 text-white shadow-md shadow-blue-600/30' : 'text-slate-600 hover:bg-slate-100'
+                step === s.id ? 'bg-brand-500 text-white shadow-md shadow-brand-500/20' : 'text-slate-600 hover:bg-slate-100'
               }`}
             >
               {s.id === 'live' ? <PlayIcon className="h-4 w-4" /> : s.id === 'preview' ? <EyeIcon className="h-4 w-4" /> : <ListChecksIcon className="h-4 w-4" />}
@@ -468,7 +468,7 @@ function QuestionsStep({
           {questions.map((q, index) => (
             <div key={q.id} className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
               <div className="flex items-start gap-3">
-                <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-blue-50 text-sm font-black text-blue-700">
+                <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-black/5 text-sm font-semibold text-slate-600">
                   {index + 1}
                 </span>
                 <div className="min-w-0 flex-1">
@@ -909,7 +909,7 @@ function DeliveryStep({
       <div className="space-y-4 p-5">
         <label
           className={`block cursor-pointer rounded-2xl border-2 p-5 transition-colors ${
-            mode === 'MANUAL' ? 'border-blue-500 bg-blue-50/50' : 'border-slate-200 hover:border-slate-300'
+            mode === 'MANUAL' ? 'border-brand-500 bg-brand-50/50' : 'border-slate-200 hover:border-slate-300'
           }`}
         >
           <input
@@ -920,7 +920,7 @@ function DeliveryStep({
             onChange={() => setMode('MANUAL')}
           />
           <div className="flex items-start gap-3">
-            <span className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-blue-100 text-blue-700">
+            <span className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-slate-100 text-slate-600">
               <ListChecksIcon className="h-4 w-4" />
             </span>
             <div>
@@ -934,7 +934,7 @@ function DeliveryStep({
 
         <label
           className={`block cursor-pointer rounded-2xl border-2 p-5 transition-colors ${
-            mode === 'RANDOM' ? 'border-blue-500 bg-blue-50/50' : 'border-slate-200 hover:border-slate-300'
+            mode === 'RANDOM' ? 'border-brand-500 bg-brand-50/50' : 'border-slate-200 hover:border-slate-300'
           }`}
         >
           <input
@@ -1023,7 +1023,7 @@ function PreviewStep({
             Publish test
           </Button>
         ) : (
-          <span className="inline-flex items-center rounded-full border border-emerald-200 bg-emerald-50 px-3 py-1 text-xs font-bold text-emerald-700">
+          <span className="inline-flex items-center rounded-full bg-white px-3 py-1 text-xs font-semibold text-slate-600 ring-1 ring-inset ring-black/10">
             Published
           </span>
         )}
@@ -1041,7 +1041,7 @@ function PreviewStep({
                 className="flex w-full items-center justify-between gap-3 p-4 text-left"
               >
                 <div className="flex items-center gap-3">
-                  <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-blue-50 text-sm font-black text-blue-700">
+                  <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-black/5 text-sm font-semibold text-slate-600">
                     {index + 1}
                   </span>
                   <div>
@@ -1130,7 +1130,7 @@ function LivePanel({ test, onChanged }: { test: Test; onChanged: () => void }) {
 
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
         <MiniStat label="Writing now" value={stats?.active ?? 0} tone="text-emerald-600" />
-        <MiniStat label="Submitted" value={stats?.submitted ?? 0} tone="text-blue-600" />
+        <MiniStat label="Submitted" value={stats?.submitted ?? 0} tone="text-navy-900" />
         <MiniStat label="Locked" value={stats?.locked ?? 0} tone="text-amber-500" />
         <MiniStat label="Security flags" value={stats?.securityEvents ?? 0} tone="text-red-600" />
       </div>
@@ -1196,18 +1196,18 @@ function MiniStat({ label, value, tone }: { label: string; value: number; tone: 
 }
 
 const LIVE_STATUS_STYLES: Record<string, string> = {
-  IN_PROGRESS: 'bg-emerald-50 text-emerald-700 border-emerald-200',
-  LOCKED: 'bg-amber-50 text-amber-700 border-amber-200',
-  DISCONNECTED: 'bg-slate-100 text-slate-600 border-slate-200',
-  SUBMITTED: 'bg-blue-50 text-blue-700 border-blue-200',
-  FORCE_SUBMITTED: 'bg-red-50 text-red-600 border-red-200',
-  TIME_EXPIRED: 'bg-indigo-50 text-indigo-700 border-indigo-200',
+  IN_PROGRESS: 'bg-white text-slate-600 border-black/10',
+  LOCKED: 'bg-white text-slate-600 border-black/10',
+  DISCONNECTED: 'bg-white text-slate-600 border-black/10',
+  SUBMITTED: 'bg-white text-slate-600 border-black/10',
+  FORCE_SUBMITTED: 'bg-white text-slate-600 border-black/10',
+  TIME_EXPIRED: 'bg-white text-slate-600 border-black/10',
 };
 
 function LiveStatusBadge({ status }: { status: string }) {
   const label = status.split('_').map((p) => p.charAt(0) + p.slice(1).toLowerCase()).join(' ');
   return (
-    <span className={`inline-flex items-center rounded-full border px-2 py-0.5 text-[11px] font-bold ${LIVE_STATUS_STYLES[status] ?? 'bg-slate-100 text-slate-600 border-slate-200'}`}>
+    <span className={`inline-flex items-center rounded-full border px-2 py-0.5 text-[11px] font-medium ${LIVE_STATUS_STYLES[status] ?? 'bg-white text-slate-600 border-black/10'}`}>
       {label}
     </span>
   );

@@ -8,34 +8,27 @@ export function StatCard({
   tone = 'default',
   hint,
   emphasis = false
-
-
-
-
-
-
-
 }: {label: string;value: React.ReactNode;icon?: React.ReactNode;tone?: 'default' | 'success' | 'warning' | 'danger' | 'brand';hint?: string;emphasis?: boolean;}) {
   const tones = {
-    default: 'text-navy-800',
-    success: 'text-emerald-600',
-    warning: 'text-amber-600',
-    danger: 'text-red-600',
+    default: 'text-navy-900',
+    success: 'text-navy-900',
+    warning: 'text-navy-900',
+    danger: 'text-navy-900',
     brand: 'text-brand-600'
   };
   return (
     <div
       className={cn(
         'rounded-2xl bg-white p-6 shadow-sm ring-1',
-        emphasis ? 'ring-brand-200' : 'ring-slate-200'
+        emphasis ? 'ring-brand-200' : 'ring-black/5'
       )}>
       
       <div className="flex items-start justify-between gap-3">
-        <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">{label}</p>
+        <p className="text-[11px] font-medium uppercase tracking-widest text-slate-500">{label}</p>
         {icon ? <span className="text-slate-400">{icon}</span> : null}
       </div>
-      <p className={cn('mt-2 text-2xl font-bold tabular-nums', tones[tone])}>{value}</p>
-      {hint ? <p className="mt-0.5 text-xs text-slate-500">{hint}</p> : null}
+      <p className={cn('mt-2 text-3xl font-semibold tracking-tight tabular-nums', tones[tone])}>{value}</p>
+      {hint ? <p className="mt-0.5 text-xs text-slate-400">{hint}</p> : null}
     </div>);
 
 }

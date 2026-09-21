@@ -76,16 +76,16 @@ export function Login() {
             </Link>
             <div className="mt-8">
               <p className="text-2xl font-black uppercase tracking-wider text-white">
-                FRESH <span className="text-sky-400">CODERS 2.0</span>
+                FRESH <span className="text-brand-400">CODERS 2.0</span>
               </p>
             </div>
           </div>
 
           {/* Middle/Bottom Large Motivational Typography */}
           <div className="relative z-10 my-auto py-12">
-            <h2 className="text-4xl xl:text-5xl font-extrabold leading-tight text-white tracking-tight">
+            <h2 className="text-4xl xl:text-5xl font-semibold leading-tight text-white tracking-tight">
               Think <br />
-              <span className="text-sky-400">Solve</span> <br />
+              <span className="text-brand-400">Solve</span> <br />
               Build <br />
               <span className="text-slate-200 text-3xl xl:text-4xl font-light">a Better Tomorrow</span>
             </h2>
@@ -107,17 +107,17 @@ export function Login() {
             </div>
 
             {/* Elevated Auth Card */}
-            <div className="rounded-3xl border border-slate-200/80 bg-white p-8 sm:p-10 shadow-xl shadow-slate-200/50">
-              <h1 className="text-center text-2xl sm:text-3xl font-black text-navy-900 tracking-tight">
+            <div className="rounded-3xl border border-black/10 bg-white p-8 sm:p-10 shadow-panel">
+              <h1 className="text-center text-2xl sm:text-3xl font-semibold text-navy-900 tracking-tight">
                 Welcome Back
               </h1>
               <p className="mt-1.5 text-center text-sm text-slate-500 font-medium">
-                Login to access the Fresh Coders 2.0 portal
+                Sign in to the Fresh Coders 2.0 portal
               </p>
 
               {/* Role Switcher Tabs */}
               <div
-                className="mt-7 grid grid-cols-3 gap-1 rounded-xl bg-slate-100 p-1.5"
+                className="mt-7 grid grid-cols-3 gap-1 rounded-full bg-black/[0.05] p-1"
                 role="tablist"
               >
                 {portals.map((item) => (
@@ -131,10 +131,10 @@ export function Login() {
                       setError(null);
                     }}
                     className={cn(
-                      'rounded-lg py-2.5 text-xs sm:text-sm font-bold transition-all duration-150',
+                      'rounded-full py-2 text-xs sm:text-sm font-medium transition-all duration-150',
                       portal === item.key
-                        ? 'bg-[#0f172a] text-white shadow-md'
-                        : 'text-slate-600 hover:text-navy-900 hover:bg-slate-200/60'
+                        ? 'bg-white text-navy-900 shadow-sm'
+                        : 'text-slate-500 hover:text-navy-900'
                     )}
                   >
                     {item.label}
@@ -187,7 +187,7 @@ export function Login() {
                 <button
                   type="submit"
                   disabled={loading}
-                  className="mt-2 w-full inline-flex items-center justify-center gap-2 rounded-xl bg-[#0f172a] py-3.5 text-sm font-bold text-white shadow-lg shadow-slate-900/20 transition-all hover:bg-slate-800 hover:shadow-slate-900/30 disabled:opacity-50"
+                  className="mt-2 w-full inline-flex items-center justify-center gap-2 rounded-lg bg-brand-500 py-3.5 text-sm font-semibold text-white transition-colors hover:bg-brand-600 disabled:opacity-50"
                 >
                   {loading ? 'Authenticating...' : 'Login'}
                   <ArrowRightIcon className="h-4 w-4" />
@@ -211,8 +211,8 @@ export function Login() {
 
             {/* Dev Demo Quick-Fill Accounts */}
             <div className="rounded-2xl border border-dashed border-slate-300 bg-white/70 p-4 shadow-sm">
-              <p className="flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-slate-600">
-                <KeyRoundIcon className="h-3.5 w-3.5 text-blue-600" /> Demo Quick-Fill Credentials
+              <p className="flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-slate-500">
+                <KeyRoundIcon className="h-3.5 w-3.5 text-brand-500" /> Demo Quick-Fill Credentials
               </p>
               <div className="mt-2.5 grid grid-cols-3 gap-2">
                 {demoCredentials.map((cred) => (
@@ -220,7 +220,7 @@ export function Login() {
                     key={cred.id}
                     type="button"
                     onClick={() => handleQuickFill(cred.id, cred.password)}
-                    className="flex flex-col items-center rounded-lg border border-slate-200 bg-slate-50 p-2 text-center transition-all hover:border-blue-500 hover:bg-blue-50"
+                    className="flex flex-col items-center rounded-lg border border-black/10 bg-white p-2 text-center transition-all hover:border-brand-400 hover:bg-brand-50"
                   >
                     <span className="text-[11px] font-bold text-navy-800">{cred.label}</span>
                     <span className="font-mono text-[10px] text-slate-500">{cred.id}</span>
@@ -230,7 +230,7 @@ export function Login() {
             </div>
 
             <p className="text-center text-xs">
-              <Link to="/" className="font-semibold text-blue-600 hover:underline">
+              <Link to="/" className="font-semibold text-brand-600 hover:underline">
                 ← Back to event home
               </Link>
             </p>

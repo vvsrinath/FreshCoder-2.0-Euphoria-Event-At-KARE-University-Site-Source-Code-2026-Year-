@@ -37,9 +37,9 @@ const NAV_LINKS: ReadonlyArray<
 export function Landing() {
   const [mobileOpen, setMobileOpen] = useState(false);
   return (
-    <div className="min-h-screen bg-[#f7f8fc] text-slate-900 font-sans flex flex-col selection:bg-indigo-500 selection:text-white">
+    <div className="min-h-screen bg-[#f5f5f7] text-slate-900 font-sans flex flex-col selection:bg-brand-500 selection:text-white">
       {/* ---------- Navigation ---------- */}
-      <header className="sticky top-0 z-40 bg-white/80 backdrop-blur-xl border-b border-slate-200/70">
+      <header className="sticky top-0 z-40 bg-white/80 backdrop-blur-xl border-b border-black/10">
         <div className="mx-auto flex h-16 max-w-7xl items-center justify-between gap-4 px-5">
           <Link to="/" className="shrink-0" aria-label="Kalasalingam home">
             <UniversityMark tone="light" />
@@ -70,7 +70,7 @@ export function Landing() {
           <div className="flex items-center gap-2">
             <Link
               to="/login?portal=STUDENT"
-              className="inline-flex items-center justify-center rounded-full bg-slate-900 px-4 py-2 text-xs font-semibold text-white transition-all hover:bg-slate-700"
+              className="inline-flex items-center justify-center rounded-full bg-brand-500 px-4 py-2 text-xs font-semibold text-white transition-all hover:bg-brand-600"
             >
               Student Portal
             </Link>
@@ -138,10 +138,8 @@ export function Landing() {
         <div className="relative mx-auto flex min-h-[94vh] max-w-7xl flex-col justify-end px-5 py-16 lg:py-24">
           {/* Copy */}
           <div className="max-w-2xl">
-            <h1 className="text-4xl font-black leading-[0.95] tracking-tight text-white sm:text-5xl lg:text-7xl">
-              <span className="bg-gradient-to-r from-indigo-300 via-sky-300 to-fuchsia-300 bg-clip-text text-transparent">
-                {brand.competition}
-              </span>
+            <h1 className="text-4xl font-semibold leading-[1.02] tracking-[-0.03em] text-white sm:text-5xl lg:text-7xl">
+              {brand.competition}
               <br />
               coding exams, made human.
             </h1>
@@ -152,17 +150,17 @@ export function Landing() {
               door to the {eventConfig.prizePool} prize pool.
             </p>
 
-            <div className="mt-6 flex flex-wrap items-center gap-3 text-sm font-medium text-slate-200">
+            <div className="mt-6 flex flex-wrap items-center gap-3 text-sm font-medium text-slate-300">
               <span className="inline-flex items-center gap-1.5">
-                <CalendarIcon className="h-4 w-4 text-indigo-300" /> {eventConfig.date}
+                <CalendarIcon className="h-4 w-4 text-brand-400" /> {eventConfig.date}
               </span>
               <span className="h-1 w-1 rounded-full bg-slate-400" />
               <span className="inline-flex items-center gap-1.5">
-                <ClockIcon className="h-4 w-4 text-sky-300" /> {eventConfig.time}
+                <ClockIcon className="h-4 w-4 text-brand-400" /> {eventConfig.time}
               </span>
               <span className="h-1 w-1 rounded-full bg-slate-400" />
               <span className="inline-flex items-center gap-1.5">
-                <MapPinIcon className="h-4 w-4 text-fuchsia-300" /> {eventConfig.venueBlock},{' '}
+                <MapPinIcon className="h-4 w-4 text-brand-400" /> {eventConfig.venueBlock},{' '}
                 {eventConfig.venueRooms}
               </span>
             </div>
@@ -189,17 +187,17 @@ export function Landing() {
       <section className="border-y border-slate-200 bg-white">
         <div className="mx-auto grid max-w-7xl grid-cols-2 gap-px px-5 py-8 md:grid-cols-4">
           {[
-            { icon: AwardIcon, tint: 'text-amber-500 bg-amber-50', label: 'Prize pool', value: eventConfig.prizePool },
-            { icon: TicketIcon, tint: 'text-fuchsia-500 bg-fuchsia-50', label: 'Registration', value: `${eventConfig.registrationFee} ${eventConfig.registrationFeeNote}` },
-            { icon: UsersIcon, tint: 'text-indigo-500 bg-indigo-50', label: 'Eligible', value: 'All first-year students' },
-            { icon: ShieldCheckIcon, tint: 'text-emerald-500 bg-emerald-50', label: 'Proctored', value: 'Live, monitored exams' },
-          ].map(({ icon: Icon, tint, label, value }) => (
+            { icon: AwardIcon, label: 'Prize pool', value: eventConfig.prizePool },
+            { icon: TicketIcon, label: 'Registration', value: `${eventConfig.registrationFee} ${eventConfig.registrationFeeNote}` },
+            { icon: UsersIcon, label: 'Eligible', value: 'All first-year students' },
+            { icon: ShieldCheckIcon, label: 'Proctored', value: 'Live, monitored exams' },
+          ].map(({ icon: Icon, label, value }) => (
             <div key={label} className="flex items-center gap-3 px-4 py-3" >
-              <span className={`inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-full ${tint}`}>
+              <span className="inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-black/5 text-slate-500">
                 <Icon className="h-5 w-5" />
               </span>
               <div>
-                <p className="text-sm font-bold text-slate-900">{value}</p>
+                <p className="text-sm font-semibold text-navy-900">{value}</p>
                 <p className="text-xs text-slate-500">{label}</p>
               </div>
             </div>
@@ -223,17 +221,17 @@ export function Landing() {
                 className="max-h-28 w-auto object-contain"
               />
             </div>
-            <div className="flex flex-col justify-center rounded-2xl bg-indigo-50 p-5">
-              <p className="text-xs font-bold uppercase tracking-wider text-indigo-500">Our ethos</p>
-              <p className="mt-1 text-sm font-semibold leading-snug text-slate-800">
+            <div className="flex flex-col justify-center rounded-2xl bg-slate-50 p-5 ring-1 ring-black/5">
+              <p className="text-xs font-bold uppercase tracking-wider text-slate-400">Our ethos</p>
+              <p className="mt-1 text-sm font-semibold leading-snug text-navy-900">
                 "{brand.motto}"
               </p>
             </div>
           </div>
 
           <div>
-            <p className="text-xs font-bold uppercase tracking-[0.2em] text-indigo-500">About the exam</p>
-            <h2 className="mt-3 text-3xl font-black tracking-tight text-slate-900 sm:text-4xl">
+            <p className="text-xs font-bold uppercase tracking-[0.2em] text-brand-600">About the exam</p>
+            <h2 className="mt-3 text-3xl font-semibold tracking-tight text-navy-900 sm:text-4xl">
               First year, first try — on a platform we built ourselves.
             </h2>
             <p className="mt-5 text-base leading-relaxed text-slate-600">
@@ -248,7 +246,7 @@ export function Landing() {
                 'A results screen that shows where you gained and lost marks',
               ].map((line) => (
                 <li key={line} className="flex items-start gap-3 text-sm text-slate-700">
-                  <CheckCircle2Icon className="mt-0.5 h-5 w-5 shrink-0 text-emerald-500" />
+                  <CheckCircle2Icon className="mt-0.5 h-5 w-5 shrink-0 text-brand-500" />
                   <span>{line}</span>
                 </li>
               ))}
@@ -257,7 +255,7 @@ export function Landing() {
               href={`https://${eventConfig.registrationSite}`}
               target="_blank"
               rel="noreferrer"
-              className="mt-7 inline-flex items-center gap-2 rounded-full bg-slate-900 px-5 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-slate-700"
+              className="mt-7 inline-flex items-center gap-2 rounded-full bg-brand-500 px-5 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-brand-600"
             >
               Register on {eventConfig.registrationSite}
               <ArrowRightIcon className="h-4 w-4" />
@@ -270,8 +268,8 @@ export function Landing() {
       <section id="event" className="bg-white py-20">
         <div className="mx-auto max-w-7xl px-5">
           <div className="max-w-2xl">
-            <p className="text-xs font-bold uppercase tracking-[0.2em] text-sky-500">Event day</p>
-            <h2 className="mt-3 text-3xl font-black tracking-tight text-slate-900 sm:text-4xl">
+            <p className="text-xs font-bold uppercase tracking-[0.2em] text-brand-600">Event day</p>
+            <h2 className="mt-3 text-3xl font-semibold tracking-tight text-navy-900 sm:text-4xl">
               {eventConfig.date}, in the 11th Block
             </h2>
           </div>
@@ -280,7 +278,7 @@ export function Landing() {
             {/* Schedule */}
             <div>
               <h3 className="text-sm font-bold uppercase tracking-wider text-slate-500">Schedule</h3>
-              <ol className="mt-5 space-y-5 border-l-2 border-indigo-100 pl-5">
+              <ol className="mt-5 space-y-5 border-l-2 border-black/10 pl-5">
                 {[
                   { time: '09:00 AM', title: 'Reporting & verification', desc: 'System check at Room 11506 & 11507' },
                   { time: '09:30 AM', title: 'Python fundamentals', desc: 'Official test starts simultaneously for everyone' },
@@ -288,9 +286,9 @@ export function Landing() {
                   { time: '01:00 PM', title: 'Results & closing', desc: 'Evaluation wraps up and winners are announced' },
                 ].map((item) => (
                   <li key={item.time} className="relative">
-                    <span aria-hidden className="absolute -left-[27px] top-1 h-3 w-3 rounded-full border-2 border-indigo-500 bg-white" />
-                    <p className="text-sm font-bold text-indigo-600">{item.time}</p>
-                    <p className="mt-0.5 text-sm font-semibold text-slate-900">{item.title}</p>
+                    <span aria-hidden className="absolute -left-[27px] top-1 h-3 w-3 rounded-full border-2 border-brand-500 bg-white" />
+                    <p className="text-sm font-semibold text-brand-600">{item.time}</p>
+                    <p className="mt-0.5 text-sm font-semibold text-navy-900">{item.title}</p>
                     <p className="mt-0.5 text-sm text-slate-500">{item.desc}</p>
                   </li>
                 ))}
@@ -300,16 +298,16 @@ export function Landing() {
             {/* Guidelines */}
             <div id="guidelines">
               <h3 className="text-sm font-bold uppercase tracking-wider text-slate-500">Guidelines</h3>
-              <ul className="mt-5 space-y-3 rounded-2xl bg-slate-50 p-6 ring-1 ring-slate-200">
+              <ul className="mt-5 space-y-3 rounded-2xl bg-white p-6 ring-1 ring-black/5 shadow-sm">
                 {guidelines.map((line) => (
                   <li key={line} className="flex items-start gap-3 text-sm text-slate-700">
-                    <CheckCircle2Icon className="mt-0.5 h-5 w-5 shrink-0 text-emerald-500" />
+                    <CheckCircle2Icon className="mt-0.5 h-5 w-5 shrink-0 text-brand-500" />
                     <span>{line}</span>
                   </li>
                 ))}
               </ul>
-              <p className="mt-4 flex items-start gap-2 rounded-xl bg-amber-50 p-4 text-xs leading-relaxed text-amber-800 ring-1 ring-amber-200">
-                <Code2Icon className="mt-0.5 h-4 w-4 shrink-0" />
+              <p className="mt-4 flex items-start gap-2 rounded-xl bg-slate-50 p-4 text-xs leading-relaxed text-slate-600 ring-1 ring-inset ring-black/5">
+                <Code2Icon className="mt-0.5 h-4 w-4 shrink-0 text-brand-500" />
                 Need help on the day? Reach any examination staff in the room, or contact the team
                 below before the event.
               </p>

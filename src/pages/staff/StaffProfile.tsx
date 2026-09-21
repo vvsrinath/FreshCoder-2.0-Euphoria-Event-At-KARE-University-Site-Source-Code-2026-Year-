@@ -70,7 +70,7 @@ export function StaffProfile() {
           />
           <div className="p-5">
             <div className="flex items-center gap-4 rounded-2xl border border-slate-200 bg-slate-50 p-5">
-              <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-blue-600 text-white font-black text-sm shadow-sm">
+              <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-navy-900 text-white font-semibold text-sm shadow-sm">
                 {user?.name?.charAt(0) || <UserIcon className="h-5 w-5" />}
               </div>
               <div>

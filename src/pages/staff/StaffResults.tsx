@@ -239,7 +239,7 @@ export function StaffResults() {
         ) : selected ? (
           <div className="space-y-5">
             <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-              <DetailStat label="Score" value={`${selected.score}/${selected.maxScore}`} tone="text-blue-600" />
+              <DetailStat label="Score" value={`${selected.score}/${selected.maxScore}`} tone="text-navy-900" />
               <DetailStat label="Percentage" value={`${selected.percentage}%`} tone="text-emerald-600" />
               <DetailStat label="Correct" value={selected.correct} tone="text-emerald-600" />
               <DetailStat label="Wrong" value={selected.wrong} tone="text-red-600" />

@@ -13,7 +13,7 @@ export function TextField({ label, hint, error, icon, className, id, ...rest }: 
   const fieldId = id ?? generated;
   return (
     <div className="w-full">
-      <label htmlFor={fieldId} className="mb-1.5 block text-xs font-semibold text-navy-700">
+      <label htmlFor={fieldId} className="mb-1.5 block text-xs font-medium text-navy-700">
         {label}
       </label>
       <div className="relative">
@@ -28,10 +28,10 @@ export function TextField({ label, hint, error, icon, className, id, ...rest }: 
           aria-describedby={error ? `${fieldId}-error` : undefined}
           {...rest}
           className={cn(
-            'h-10 w-full rounded-md border bg-white px-3 text-sm text-navy-800 placeholder:text-slate-400',
-            'transition-colors duration-150 ease-out focus:border-brand-500 focus:outline-none focus:ring-2 focus:ring-brand-100',
+            'h-10 w-full rounded-lg border bg-white px-3 text-sm text-navy-900 placeholder:text-slate-400',
+            'transition-colors duration-150 ease-out focus:border-brand-500 focus:outline-none focus:ring-2 focus:ring-brand-500/25',
             icon && 'pl-9',
-            error ? 'border-red-400' : 'border-slate-300',
+            error ? 'border-red-400' : 'border-black/10',
             className
           )} />
         

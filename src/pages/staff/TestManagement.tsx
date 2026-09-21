@@ -39,12 +39,12 @@ const STATUS_LABELS: Record<string, string> = {
 };
 
 const STATUS_STYLES: Record<string, string> = {
-  ACTIVE: 'bg-emerald-50 text-emerald-700 border-emerald-200',
-  SCHEDULED: 'bg-blue-50 text-blue-700 border-blue-200',
-  PAUSED: 'bg-amber-50 text-amber-700 border-amber-200',
-  DRAFT: 'bg-slate-100 text-slate-600 border-slate-200',
-  COMPLETED: 'bg-indigo-50 text-indigo-700 border-indigo-200',
-  ARCHIVED: 'bg-red-50 text-red-600 border-red-200',
+  ACTIVE: 'bg-white text-slate-600 border-black/10',
+  SCHEDULED: 'bg-white text-slate-600 border-black/10',
+  PAUSED: 'bg-white text-slate-600 border-black/10',
+  DRAFT: 'bg-white text-slate-600 border-black/10',
+  COMPLETED: 'bg-white text-slate-600 border-black/10',
+  ARCHIVED: 'bg-white text-slate-600 border-black/10',
 };
 
 function formatSchedule(value: string | null | undefined): string {
@@ -59,7 +59,7 @@ function formatSchedule(value: string | null | undefined): string {
 function statusBadge(status: string) {
   const label = STATUS_LABELS[status] ?? status.charAt(0) + status.slice(1).toLowerCase();
   return (
-    <span className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-bold border ${STATUS_STYLES[status] ?? STATUS_STYLES.DRAFT}`}>
+    <span className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium border ${STATUS_STYLES[status] ?? STATUS_STYLES.DRAFT}`}>
       {label}
     </span>
   );
@@ -182,9 +182,9 @@ export function TestManagement() {
             <p className="mt-1 text-xs sm:text-sm text-slate-500 font-medium">
               Create, configure, schedule and launch assessments.
             </p>
-            <span className="mt-2 inline-flex items-center gap-1.5 rounded-full border border-emerald-200 bg-emerald-50 px-3 py-1 text-[11px] font-semibold text-emerald-700">
+            <span className="mt-2 inline-flex items-center gap-1.5 rounded-full border border-black/10 bg-white px-3 py-1 text-[11px] font-medium text-slate-500">
               <span className="relative flex h-2 w-2">
-                <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-75" />
+                <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-500 opacity-60" />
                 <span className="relative inline-flex h-2 w-2 rounded-full bg-emerald-500" />
               </span>
               Live · auto-refreshes every 15s
@@ -193,7 +193,7 @@ export function TestManagement() {
           <button
             type="button"
             onClick={() => navigate('/staff/tests/new')}
-            className="inline-flex items-center gap-2 rounded-xl bg-blue-600 px-5 py-2.5 text-xs sm:text-sm font-bold text-white shadow-md shadow-blue-600/30 hover:bg-blue-500 transition-all"
+            className="inline-flex items-center gap-2 rounded-xl bg-brand-500 px-5 py-2.5 text-xs sm:text-sm font-semibold text-white shadow-md shadow-brand-500/20 hover:bg-brand-600 transition-all"
           >
             <PlusIcon className="h-4 w-4" />
             Create New Test
@@ -208,7 +208,7 @@ export function TestManagement() {
               <select
                 value={typeFilter}
                 onChange={(e) => setTypeFilter(e.target.value)}
-                className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs sm:text-sm font-medium text-slate-700 focus:border-blue-500 focus:outline-none"
+                className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs sm:text-sm font-medium text-slate-700 focus:border-brand-500 focus:outline-none"
               >
                 <option value="">All Types</option>
                 <option value="Mixed">Mixed</option>
@@ -223,7 +223,7 @@ export function TestManagement() {
               <select
                 value={statusFilter}
                 onChange={(e) => setStatusFilter(e.target.value)}
-                className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs sm:text-sm font-medium text-slate-700 focus:border-blue-500 focus:outline-none"
+                className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs sm:text-sm font-medium text-slate-700 focus:border-brand-500 focus:outline-none"
               >
                 <option value="">All Status</option>
                 <option value="SCHEDULED">Scheduled</option>
@@ -241,7 +241,7 @@ export function TestManagement() {
                 placeholder="Search tests..."
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
-                className="w-full rounded-xl border border-slate-200 bg-white pl-9 pr-4 py-2 text-xs sm:text-sm font-medium text-slate-700 placeholder-slate-400 focus:border-blue-500 focus:outline-none"
+                className="w-full rounded-xl border border-slate-200 bg-white pl-9 pr-4 py-2 text-xs sm:text-sm font-medium text-slate-700 placeholder-slate-400 focus:border-brand-500 focus:outline-none"
               />
               <SearchIcon className="absolute left-3 top-2.5 h-4 w-4 text-slate-400" />
             </div>
@@ -344,7 +344,7 @@ export function TestManagement() {
                           <button
                             type="button"
                             onClick={() => navigate(`/staff/tests/${row.id}`)}
-                            className="rounded-lg p-1.5 text-blue-600 hover:bg-blue-50 transition-colors"
+                            className="rounded-lg p-1.5 text-slate-500 hover:bg-slate-100 transition-colors"
                             title="Open test workspace"
                           >
                             <ArrowRightIcon className="h-4 w-4" />
