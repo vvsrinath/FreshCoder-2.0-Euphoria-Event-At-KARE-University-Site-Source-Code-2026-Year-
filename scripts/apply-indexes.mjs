@@ -18,6 +18,10 @@ const INDEXES = [
   "CREATE INDEX IF NOT EXISTS idx_answers_attempt_q ON answers(attempt_id, question_id)",
 ];
 
+const MIGRATIONS = [
+  "ALTER TABLE tests ADD COLUMN practice INTEGER NOT NULL DEFAULT 0",
+];
+
 const client = createClient({
   url: url.replace(/^libsql:/, "https:"),
   authToken: token,
@@ -35,6 +39,18 @@ try {
     console.log(
       `[apply-indexes] ${sql.split(" ON ")[0].replace("CREATE INDEX IF NOT EXISTS ", "").trim()} → ${after.rows[0].n} index rows (${before.rows[0].n} → ${after.rows[0].n})`
     );
+  }
+  for (const sql of MIGRATIONS) {
+    try {
+      await client.execute(sql);
+      console.log(`[apply-indexes] migration ok: ${sql}`);
+    } catch (error) {
+      if (/duplicate column|already exists/i.test(error.message)) {
+        console.log(`[apply-indexes] migration already applied: ${sql}`);
+      } else {
+        throw error;
+      }
+    }
   }
   console.log("[apply-indexes] done.");
 } catch (error) {

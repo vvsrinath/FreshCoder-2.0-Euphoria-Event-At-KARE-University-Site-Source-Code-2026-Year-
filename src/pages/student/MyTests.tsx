@@ -50,14 +50,21 @@ export function MyTests() {
     header: 'Test',
     render: (row) =>
     <div>
-          <p className="font-semibold text-navy-800">{row.name}</p>
+          <p className="font-semibold text-navy-800">
+            {row.name}
+            {row.practice ?
+            <span className="ml-2 inline-block rounded-full bg-brand-50 px-2 py-0.5 align-middle text-[10px] font-bold uppercase tracking-wide text-brand-700 ring-1 ring-brand-200">
+                Practice
+              </span> :
+            null}
+          </p>
           <p className="text-xs text-slate-500">{testTypeLabels[row.type] ?? row.type}</p>
         </div>
 
   },
   { key: 'questions', header: 'Questions', render: (row) => row.questionCount, align: 'center' },
   { key: 'duration', header: 'Duration', render: (row) => `${row.durationMinutes} min`, align: 'center' },
-  { key: 'start', header: 'Scheduled', render: (row) => formatDateTime(row.scheduledStart) },
+  { key: 'start', header: 'Scheduled', render: (row) => row.practice ? 'Always open' : formatDateTime(row.scheduledStart) },
   { key: 'test-status', header: 'Test status', render: (row) => <StatusBadge status={row.status} /> },
   { key: 'attempt', header: 'Your attempt', render: (row) => <StatusBadge status={row.attemptStatus} /> },
   {

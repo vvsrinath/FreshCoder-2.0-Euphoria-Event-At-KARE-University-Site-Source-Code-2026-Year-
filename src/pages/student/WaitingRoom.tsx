@@ -96,7 +96,7 @@ export function WaitingRoom() {
         <Card className="mt-8 overflow-hidden">
           <div className="grid gap-px bg-black/5 sm:grid-cols-4">
             {[
-            ['Scheduled start', test.scheduledStart ? formatDateTime(test.scheduledStart) : 'On staff command'],
+            ['Scheduled start', test.practice ? 'Always open' : (test.scheduledStart ? formatDateTime(test.scheduledStart) : 'On staff command')],
             ['Duration', `${test.durationMinutes} minutes`],
             ['Questions', String(test.questionCount)],
             ['Event', eventConfig.name]].
@@ -110,6 +110,10 @@ export function WaitingRoom() {
 
           <div className="border-t border-slate-200 bg-navy-800 px-6 py-8 text-center">
             {finished ?
+            test.practice ?
+            <p className="text-sm text-slate-200">
+                You have submitted this practice test. Your score and per-question review are ready on the results page.
+              </p> :
             <p className="text-sm text-slate-200">
                 You have already submitted this test. Results will be published by examination staff.
               </p> :

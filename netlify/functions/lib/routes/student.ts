@@ -334,7 +334,7 @@ export async function finalizeAttempt(
       percentage,
       timeUsed,
       submittedAt,
-      Number(test?.["results_published"]) === 1 ? 1 : 0,
+      Number(test?.["practice"]) === 1 || Number(test?.["results_published"]) === 1 ? 1 : 0,
       JSON.stringify(breakdown),
     ]
   );
@@ -351,7 +351,7 @@ export async function finalizeAttempt(
     score,
     maxScore,
     percentage,
-    published: Number(test?.["results_published"]) === 1,
+    published: Number(test?.["practice"]) === 1 || Number(test?.["results_published"]) === 1,
   };
 }
 
@@ -421,6 +421,7 @@ async function assignedTests(studentId: string): Promise<Record<string, unknown>
       durationMinutes: test["duration_minutes"],
       scheduledStart: test["scheduled_start"],
       status,
+      practice: num(test["practice"]) === 1,
       attemptStatus: attempt ? attempt["status"] : "NOT_STARTED",
       attemptId: attempt ? attempt["id"] : null,
       resultAvailable: Boolean(result && Number(result["published"]) === 1),
@@ -488,6 +489,7 @@ async function getTest(ctx: RouteCtx): Promise<HttpResponse> {
       durationMinutes: test["duration_minutes"],
       scheduledStart: test["scheduled_start"],
       status,
+      practice: num(test["practice"]) === 1,
       startedAt: test["started_at"],
     },
     attemptStatus: attempt ? attempt["status"] : "NOT_STARTED",
@@ -507,7 +509,8 @@ async function startTest(ctx: RouteCtx): Promise<HttpResponse> {
   }
   if (!(await isAssigned(testId, ctx.user.id))) throw new ApiError(403, "You are not enrolled in this test.");
   const scheduled = parseUtc(str(test["scheduled_start"]));
-  if (scheduled && scheduled.getTime() > Date.now()) throw new ApiError(409, "This test has not started yet.");
+  const practice = num(test["practice"]) === 1;
+  if (scheduled && !practice && scheduled.getTime() > Date.now()) throw new ApiError(409, "This test has not started yet.");
 
   let attempt = await queryOne("SELECT * FROM attempts WHERE test_id = ? AND student_id = ?", [testId, ctx.user.id]);
 

@@ -40,6 +40,7 @@ CREATE TABLE IF NOT EXISTS tests (
     scheduled_start   TEXT,
     status            TEXT NOT NULL DEFAULT 'DRAFT',
     results_published INTEGER NOT NULL DEFAULT 0,
+    practice          INTEGER NOT NULL DEFAULT 0,
     started_at        TEXT,
     stopped_at        TEXT,
     created_by        TEXT NOT NULL REFERENCES users(id),

@@ -60,6 +60,7 @@ function testToJson(row: Row): Record<string, unknown> {
     scheduledStart: row["scheduled_start"],
     status: row["status"],
     resultsPublished: bool(row["results_published"]),
+    practice: num(row["practice"]) === 1,
     startedAt: row["started_at"],
     stoppedAt: row["stopped_at"],
     createdBy: row["created_by"],
@@ -204,8 +205,9 @@ async function createTest(ctx: RouteCtx): Promise<HttpResponse> {
 
   const testId = `T${crypto16(8)}`;
   const scheduledStart = body["scheduledStart"] === undefined ? null : str(body["scheduledStart"]);
+  const practice = body["practice"] === true || body["practice"] === 1 || str(body["practice"]) === "true";
   await execute(
-    "INSERT INTO tests (id, event_id, name, description, type, question_count, duration_minutes, selection_mode, distribution, manual_question_ids, scheduled_start, status, results_published, created_by, created_at) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,0,?,?)",
+    "INSERT INTO tests (id, event_id, name, description, type, question_count, duration_minutes, selection_mode, distribution, manual_question_ids, scheduled_start, status, results_published, practice, created_by, created_at) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,0,?,?,?)",
     [
       testId,
       eventId,
@@ -219,6 +221,7 @@ async function createTest(ctx: RouteCtx): Promise<HttpResponse> {
       JSON.stringify(Array.isArray(body["manualQuestionIds"]) ? body["manualQuestionIds"] : []),
       scheduledStart,
       scheduledStart ? "SCHEDULED" : "DRAFT",
+      practice ? 1 : 0,
       ctx.user.id,
       utcNow(),
     ]
@@ -291,7 +294,7 @@ async function updateTest(ctx: RouteCtx): Promise<HttpResponse> {
   }
 
   await execute(
-    "UPDATE tests SET name = ?, description = ?, type = ?, question_count = ?, duration_minutes = ?, selection_mode = ?, distribution = ?, manual_question_ids = ?, scheduled_start = ? WHERE id = ?",
+    "UPDATE tests SET name = ?, description = ?, type = ?, question_count = ?, duration_minutes = ?, selection_mode = ?, distribution = ?, manual_question_ids = ?, scheduled_start = ?, practice = ? WHERE id = ?",
     [
       str(body["name"] ?? row["name"]).slice(0, 200),
       body["description"] !== undefined ? body["description"] : row["description"],
@@ -306,6 +309,7 @@ async function updateTest(ctx: RouteCtx): Promise<HttpResponse> {
           : (loads(str(row["manual_question_ids"]), []) as unknown[])
       ),
       body["scheduledStart"] !== undefined ? body["scheduledStart"] : row["scheduled_start"],
+      body["practice"] !== undefined ? (body["practice"] === true || body["practice"] === 1 || str(body["practice"]) === "true" ? 1 : 0) : row["practice"],
       ctx.params[0],
     ]
   );
@@ -319,7 +323,7 @@ async function duplicateTest(ctx: RouteCtx): Promise<HttpResponse> {
   if (row === undefined) throw new ApiError(404, "Test not found.");
   const newId = `T${crypto16(8)}`;
   await execute(
-    "INSERT INTO tests (id, event_id, name, description, type, question_count, duration_minutes, selection_mode, distribution, manual_question_ids, scheduled_start, status, results_published, created_by, created_at) VALUES (?,?,?,?,?,?,?,?,?,?,NULL,'DRAFT',0,?,?)",
+    "INSERT INTO tests (id, event_id, name, description, type, question_count, duration_minutes, selection_mode, distribution, manual_question_ids, scheduled_start, status, results_published, practice, created_by, created_at) VALUES (?,?,?,?,?,?,?,?,?,?,NULL,'DRAFT',0,?,?,?)",
     [
       newId,
       row["event_id"],
@@ -331,6 +335,7 @@ async function duplicateTest(ctx: RouteCtx): Promise<HttpResponse> {
       row["selection_mode"],
       row["distribution"],
       row["manual_question_ids"],
+      row["practice"],
       ctx.user.id,
       utcNow(),
     ]
@@ -360,13 +365,21 @@ async function scheduleTest(ctx: RouteCtx): Promise<HttpResponse> {
     throw new ApiError(400, "Fix the question distribution before scheduling this test.");
   }
   const scheduledStart = ctx.body["scheduledStart"] !== undefined ? str(ctx.body["scheduledStart"]) : str(row["scheduled_start"]);
-  if (!scheduledStart) throw new ApiError(400, "Choose a scheduled start time before publishing this test.");
-  transition(row, "SCHEDULED");
-  await execute("UPDATE tests SET scheduled_start = ? WHERE id = ?", [
-    scheduledStart,
-    ctx.params[0],
-  ]);
-  await audit(ctx.user.id, ctx.user.role, "Scheduled test", str(row["name"]));
+  const practice = num(row["practice"]) === 1;
+  if (!scheduledStart && !practice) throw new ApiError(400, "Choose a scheduled start time before publishing this test.");
+  if (practice) {
+    await execute("UPDATE tests SET scheduled_start = ?, status = 'ACTIVE' WHERE id = ?", [
+      scheduledStart || null,
+      ctx.params[0],
+    ]);
+  } else {
+    transition(row, "SCHEDULED");
+    await execute("UPDATE tests SET scheduled_start = ? WHERE id = ?", [
+      scheduledStart,
+      ctx.params[0],
+    ]);
+  }
+  await audit(ctx.user.id, ctx.user.role, practice ? "Published practice set" : "Scheduled test", str(row["name"]));
   const fresh = await queryOne("SELECT * FROM tests WHERE id = ?", [ctx.params[0]]);
   return ok({ test: testToJson(fresh as Row) });
 }

@@ -28,6 +28,7 @@ interface FormState {
   distribution: Partial<Record<QuestionType, number>>;
   scheduledStart: string;
   timingReason: string;
+  practice: boolean;
 }
 
 const emptyForm: FormState = {
@@ -39,7 +40,8 @@ const emptyForm: FormState = {
   selectionMode: 'MANUAL',
   distribution: {},
   scheduledStart: '',
-  timingReason: ''
+  timingReason: '',
+  practice: false
 };
 
 export function TestBuilder() {
@@ -66,7 +68,8 @@ export function TestBuilder() {
         selectionMode: t.selectionMode,
         distribution: t.distribution ?? {},
         scheduledStart: t.scheduledStart ? String(t.scheduledStart).slice(0, 16) : '',
-        timingReason: ''
+        timingReason: '',
+        practice: Boolean(t.practice)
       });
       setOriginalDuration(t.durationMinutes);
     }).
@@ -91,7 +94,7 @@ export function TestBuilder() {
         ...form,
         questionCount: Number(form.questionCount),
         durationMinutes: Number(form.durationMinutes),
-        scheduledStart: form.scheduledStart || null
+        scheduledStart: form.practice ? null : (form.scheduledStart || null)
       };
       if (editing && id) {
         await api.updateTest(id, payload);
@@ -223,9 +226,31 @@ export function TestBuilder() {
               <TextField
               label="Scheduled start"
               type="datetime-local"
-              value={form.scheduledStart}
+              value={form.practice ? '' : form.scheduledStart}
+              disabled={form.practice}
               onChange={(e) => update('scheduledStart', e.target.value)}
-              hint="Students wait in the waiting room until staff start the test." />
+              hint={form.practice ?
+              'Practice sets are always open — students can start any time.' :
+            'Students wait in the waiting room until staff start the test.'} />
+            
+
+            <label className="flex cursor-pointer items-start justify-between gap-3 rounded-xl bg-white p-4 ring-1 ring-black/5">
+              <span>
+                <span className="block text-sm font-semibold text-navy-900">Practice mode</span>
+                <span className="mt-1 block text-xs leading-relaxed text-slate-600">
+                  Always available, no schedule or waiting room, and results (including per-question
+                  review) are shown to the student instantly after submission.
+                </span>
+              </span>
+              <input
+              type="checkbox"
+              checked={form.practice}
+              onChange={(e) => {
+                update('practice', e.target.checked);
+                if (e.target.checked) update('scheduledStart', '');
+              }}
+              className="mt-0.5 h-5 w-5 rounded border-slate-300 accent-brand-600" />
+            </label>
             
 
               {durationChanged ?
