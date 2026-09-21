@@ -20,7 +20,8 @@ export interface ExamState {
   deadline: string | null;
   serverOffsetMs: number;
   questions: ExamQuestion[];
-  /** Working answers held in React only — never written to storage. */
+  /** Working answers. Locked answers go to the DB immediately; the rest are
+   *  auto-saved to the server on each heartbeat and flushed on submit. */
   answers: Record<string, string>;
   meta: Record<string, AnswerMeta>;
   flagged: Record<string, boolean>;
@@ -70,6 +71,11 @@ export function useExamAttempt(testId: string) {
 
   // Guards against a second submit racing in before React state settles.
   const submittingRef = useRef(false);
+
+  // Question ids whose answers changed since the last successful heartbeat.
+  // Auto-save persists them server-side so a crash or a deadline expiry never
+  // loses recent work; reloads (startTest) restore them from the DB.
+  const dirtyRef = useRef(new Set<string>());
 
   const applyPayload = useCallback((payload: any) => {
     const answers: Record<string, string> = {};
@@ -145,7 +151,20 @@ export function useExamAttempt(testId: string) {
       if (!snapshot.attemptId || snapshot.submitted) return;
       try {
         const answered = Object.values(snapshot.answers).filter((v) => v.trim()).length;
-        const res = await api.heartbeat(snapshot.attemptId, snapshot.current, answered);
+        const dirty: Record<string, string> = {};
+        if (dirtyRef.current.size > 0) {
+          for (const qid of dirtyRef.current) {
+            const value = snapshot.answers[qid];
+            if (value !== undefined && value !== null) dirty[qid] = value;
+          }
+        }
+        const res = await api.heartbeat(snapshot.attemptId, snapshot.current, answered, dirty);
+        const currentAnswers = stateRef.current.answers;
+        for (const qid of Object.keys(dirty)) {
+          if (dirtyRef.current.has(qid) && currentAnswers[qid] === dirty[qid]) {
+            dirtyRef.current.delete(qid);
+          }
+        }
         if (res.forceSubmit) {
           await submit('FORCE_SUBMITTED');
           return;
@@ -172,6 +191,7 @@ export function useExamAttempt(testId: string) {
   }, [submit]);
 
   const setAnswer = useCallback((questionId: string, value: string) => {
+    dirtyRef.current.add(questionId);
     setState((prev) => ({ ...prev, answers: { ...prev.answers, [questionId]: value } }));
   }, []);
 
@@ -190,8 +210,8 @@ export function useExamAttempt(testId: string) {
   }, []);
 
   const lockAnswer = useCallback(async (questionId: string) => {
-    // Answers are stored locally only — NOT sent to DB during the exam.
-    // They are only sent to DB on submit or when an edit is requested.
+    // Local answers are auto-saved via heartbeat; locking makes the value
+    // immutable server-side so only an approved edit request can change it.
     setState((prev) => ({
       ...prev,
       meta: { ...prev.meta, [questionId]: { locked: true, editGranted: false } }

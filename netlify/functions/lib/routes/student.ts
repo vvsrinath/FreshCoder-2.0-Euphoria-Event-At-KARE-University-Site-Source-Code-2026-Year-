@@ -619,12 +619,51 @@ async function heartbeatPayload(attempt: Row, autoSubmitted = false): Promise<Re
   };
 }
 
+async function storeDirtyAnswers(attempt: Row, incoming: Record<string, unknown>): Promise<void> {
+  if (!incoming || typeof incoming !== "object") return;
+  const ids = (loads(str(attempt["question_ids"]), []) as unknown[]) as string[];
+  const have = new Set(ids);
+  const existing = await query("SELECT question_id, locked, edit_granted FROM answers WHERE attempt_id = ?", [attempt["id"]]);
+  const existingMap = new Map(existing.map((r) => [str(r["question_id"]), r]));
+  const inserts: [string, string][] = [];
+  const updates: [string, string][] = [];
+  for (const qid of Object.keys(incoming)) {
+    const value = incoming[qid];
+    if (value === null || value === undefined || typeof value !== "string") continue;
+    if (!have.has(qid)) continue;
+    const row = existingMap.get(qid);
+    if (row === undefined) {
+      inserts.push([qid, value.slice(0, 10000)]);
+    } else if (Number(row["locked"]) === 0 && Number(row["edit_granted"]) === 0) {
+      updates.push([qid, value.slice(0, 10000)]);
+    }
+  }
+  if (inserts.length > 0) {
+    const now = utcNow();
+    const params: unknown[] = [];
+    for (const [qid, val] of inserts) params.push(attempt["id"], qid, val, now);
+    await execute(
+      "INSERT INTO answers (attempt_id, question_id, value, locked, edit_granted, updated_at) VALUES " +
+        new Array(inserts.length).fill("(?, ?, ?, 0, 0, ?)").join(", "),
+      params
+    );
+  }
+  for (const [qid, val] of updates) {
+    await execute(
+      "UPDATE answers SET value = ?, updated_at = ? WHERE attempt_id = ? AND question_id = ?",
+      [val, utcNow(), attempt["id"], qid]
+    );
+  }
+}
+
 async function heartbeat(ctx: RouteCtx): Promise<HttpResponse> {
   const attemptId = ctx.params[0];
   let attempt = await ownAttemptOr403(attemptId, ctx.user.id);
   const status = str(attempt["status"]);
 
   if (FINAL_STATES.includes(status)) return ok(await heartbeatPayload(attempt));
+
+  await storeDirtyAnswers(attempt, (ctx.body["answers"] as Record<string, unknown>) ?? {});
 
   if (deadlineExpired(attempt)) {
     await finalizeAttempt(attempt, await storedAnswers(attempt), "TIME_EXPIRED");

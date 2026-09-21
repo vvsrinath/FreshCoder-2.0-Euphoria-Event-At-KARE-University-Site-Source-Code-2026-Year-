@@ -96,10 +96,11 @@ export const api = {
   getAttempt: (id: string) => request<any>('GET', `/api/student/attempts/${id}`),
   lockAnswer: (attemptId: string, questionId: string, value: string) =>
   request<any>('POST', `/api/student/attempts/${attemptId}/lock`, { questionId, value }),
-  heartbeat: (attemptId: string, currentQuestion: number, answeredCount: number) =>
+  heartbeat: (attemptId: string, currentQuestion: number, answeredCount: number, answers?: Record<string, string>) =>
   request<any>('POST', `/api/student/attempts/${attemptId}/heartbeat`, {
     currentQuestion,
-    answeredCount
+    answeredCount,
+    answers
   }),
   submitAttempt: (attemptId: string, answers: Record<string, string>, reason: string) =>
   request<any>('POST', `/api/student/attempts/${attemptId}/submit`, { answers, reason }),
