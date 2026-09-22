@@ -9,6 +9,7 @@ import {
   ChevronUpIcon,
   DownloadIcon,
   EyeIcon,
+  EyeOffIcon,
   ListChecksIcon,
   PlayIcon,
   PauseIcon,
@@ -255,6 +256,22 @@ function TestControls({ test, onChanged }: { test: Test; onChanged: () => void }
           onClick={() => run('force', () => api.forceStopTest(test.id), 'Test ended — all live attempts submitted.')}
         >
           End & submit all
+        </Button>
+      )}
+      {test.status === 'COMPLETED' && (
+        <Button
+          variant={test.resultsPublished ? 'secondary' : 'success'}
+          loading={busy === 'publish'}
+          icon={test.resultsPublished ? <EyeOffIcon className="h-4 w-4" /> : <EyeIcon className="h-4 w-4" />}
+          onClick={() =>
+            run(
+              'publish',
+              () => api.publishResults(test.id, !test.resultsPublished),
+              test.resultsPublished ? 'Results hidden from students.' : 'Results published to students.'
+            )
+          }
+        >
+          {test.resultsPublished ? 'Hide results' : 'Publish results'}
         </Button>
       )}
       {['DRAFT', 'SCHEDULED'].includes(test.status) && (
