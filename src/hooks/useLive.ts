@@ -29,13 +29,15 @@ export function useLive({ intervalMs, onEvent, channel }: UseLiveOptions): { mod
     let control: AbortController | undefined;
     let reconnectTimer: number | undefined;
     let attempts = 0;
+    // Per-mount jitter: desyncs all students' polls so they don't hit the API in lock-step
+    const interval = Math.max(5000, Math.round(intervalMs * (0.85 + Math.random() * 0.3)));
 
     const stopPolling = () => window.clearInterval(pollId);
     const startPolling = () => {
       window.clearInterval(pollId);
       pollId = window.setInterval(() => {
         if (!document.hidden) fnRef.current();
-      }, intervalMs);
+      }, interval);
     };
 
     const syncPolling = () => (document.hidden ? stopPolling() : startPolling());

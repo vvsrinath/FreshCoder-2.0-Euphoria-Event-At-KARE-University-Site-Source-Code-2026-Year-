@@ -3,7 +3,8 @@ import { toast } from 'sonner';
 import { api, ApiRequestError } from '../services/api';
 import type { ExamQuestion } from '../components/QuestionCard';
 
-const HEARTBEAT_MS = 10000;
+// Randomized per-mount so students don't all hit the API on the same 10s tick
+const HEARTBEAT_MS = 8000 + Math.floor(Math.random() * 4000);
 
 export type SubmitReason = 'NORMAL' | 'TIME_EXPIRED' | 'FORCE_SUBMITTED';
 
