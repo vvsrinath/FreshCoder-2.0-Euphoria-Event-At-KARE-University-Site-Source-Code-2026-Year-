@@ -88,7 +88,6 @@ export function PortalLayout({ portalLabel, navItems, children, headerRight, nav
         logViolation('COPY_BLOCKED', `Function key blocked: ${key}`);
         return;
       }
-      if (key === 'Escape') { e.preventDefault(); e.stopPropagation(); return; }
       if (ctrl) {
         const blockList = ['Tab','w','t','n','r','R','i','I','j','J','c','C','u','U','s','S','p','P','a','A','f','F','m','M','e','E','k','K'];
         if (shift) blockList.push('Delete');

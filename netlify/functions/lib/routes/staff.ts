@@ -569,7 +569,7 @@ async function updateQuestion(ctx: RouteCtx): Promise<HttpResponse> {
   }
 
   await execute(
-    "UPDATE questions SET version = ?, title = ?, type = ?, topic = ?, difficulty = ?, marks = ?, status = ?, prompt = ?, code = ?, options = ?, answer = ?, alternatives = ?, explanation = ? WHERE id = ?",
+    "UPDATE questions SET version = ?, title = ?, type = ?, topic = ?, difficulty = ?, marks = ?, status = ?, prompt = ?, code = ?, options = ?, answer = ?, alternatives = ?, explanation = ?, input_format = ?, output_format = ?, constraints = ?, sample_input = ?, sample_output = ?, test_cases = ? WHERE id = ?",
     [
       version,
       str(body["title"] ?? row["title"]).slice(0, 500),
@@ -586,6 +586,12 @@ async function updateQuestion(ctx: RouteCtx): Promise<HttpResponse> {
         ? JSON.stringify(body["alternatives"])
         : row["alternatives"],
       body["explanation"] !== undefined ? body["explanation"] : row["explanation"],
+      body["inputFormat"] !== undefined ? body["inputFormat"] : row["input_format"],
+      body["outputFormat"] !== undefined ? body["outputFormat"] : row["output_format"],
+      body["constraints"] !== undefined ? body["constraints"] : row["constraints"],
+      body["sampleInput"] !== undefined ? body["sampleInput"] : row["sample_input"],
+      body["sampleOutput"] !== undefined ? body["sampleOutput"] : row["sample_output"],
+      body["testCases"] !== undefined ? JSON.stringify(body["testCases"]) : row["test_cases"],
       ctx.params[0],
     ]
   );

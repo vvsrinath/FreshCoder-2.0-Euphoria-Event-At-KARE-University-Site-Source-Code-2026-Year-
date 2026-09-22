@@ -192,6 +192,7 @@ export function useExamAttempt(testId: string) {
   }, [submit]);
 
   const setAnswer = useCallback((questionId: string, value: string) => {
+    if (stateRef.current.staffLocked) return;
     dirtyRef.current.add(questionId);
     setState((prev) => ({ ...prev, answers: { ...prev.answers, [questionId]: value } }));
   }, []);
@@ -211,13 +212,21 @@ export function useExamAttempt(testId: string) {
   }, []);
 
   const lockAnswer = useCallback(async (questionId: string) => {
-    // Local answers are auto-saved via heartbeat; locking makes the value
-    // immutable server-side so only an approved edit request can change it.
-    setState((prev) => ({
-      ...prev,
-      meta: { ...prev.meta, [questionId]: { locked: true, editGranted: false } }
-    }));
-    return true;
+    const snapshot = stateRef.current;
+    if (!snapshot.attemptId) return false;
+    try {
+      const value = snapshot.answers[questionId] ?? '';
+      await api.lockAnswer(snapshot.attemptId, questionId, value);
+      dirtyRef.current.delete(questionId);
+      setState((prev) => ({
+        ...prev,
+        meta: { ...prev.meta, [questionId]: { locked: true, editGranted: false } }
+      }));
+      return true;
+    } catch (err) {
+      toast.error((err as Error).message);
+      return false;
+    }
   }, []);
 
   const requestEdit = useCallback(async (questionId: string, reason: string) => {

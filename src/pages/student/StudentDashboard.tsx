@@ -55,7 +55,8 @@ export function StudentDashboard() {
 
   const studentName = data?.student?.name ?? 'Student';
 
-  const test = data?.tests?.[0] ?? null;
+  const tests: any[] = data?.tests ?? [];
+  const test = tests.find((t) => t.status === 'ACTIVE' || t.status === 'PAUSED') ?? tests[0] ?? null;
   const testName = test?.name ?? 'Untitled test';
   const testStatus = test?.status ?? 'SCHEDULED';
   const live = testStatus === 'ACTIVE';
@@ -138,7 +139,41 @@ export function StudentDashboard() {
                           <CalendarClockIcon className="h-4 w-4 text-slate-400" />
                           {live ? `Live since ${scheduledStart}` : paused ? `Paused · started ${scheduledStart}` : `Starts ${scheduledStart}`}
                         </span>
-                      )}
+)}
+
+          {tests.length > 1 && (
+            <div className="rounded-2xl bg-white p-6 shadow-sm ring-1 ring-black/5">
+              <h3 className="text-base font-semibold text-navy-900">All your tests</h3>
+              <ul className="mt-4 divide-y divide-slate-100">
+                {tests.map((t) => {
+                  const liveChip = t.status === 'ACTIVE';
+                  const pausedChip = t.status === 'PAUSED';
+                  const chipCls = liveChip ? 'bg-emerald-500' : pausedChip ? 'bg-amber-500' : t.status === 'COMPLETED' ? 'bg-slate-400' : 'bg-slate-400';
+                  const chipLabel = liveChip ? 'Live now' : pausedChip ? 'Paused by staff' : t.status === 'COMPLETED' ? 'Completed' : t.status === 'DRAFT' ? 'Draft' : t.status === 'ARCHIVED' ? 'Archived' : 'Scheduled';
+                  return (
+                    <li key={t.id} className="flex items-center justify-between gap-4 py-3">
+                      <div className="flex min-w-0 items-center gap-3">
+                        <span className="h-1.5 w-1.5 shrink-0 rounded-full" style={{ backgroundColor: 'currentColor', color: liveChip ? '#10b981' : pausedChip ? '#f59e0b' : '#94a3b8' }} />
+                        <span className="truncate text-sm font-medium text-navy-900">{t.name}</span>
+                        <span className={`inline-flex items-center gap-1.5 rounded-full bg-white px-2.5 py-0.5 text-xs font-medium text-slate-600 ring-1 ring-inset ring-black/10`}>
+                          <span className={`h-1.5 w-1.5 rounded-full ${chipCls}`} />
+                          {chipLabel}
+                        </span>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => t.id && navigate(`/student/tests/${t.id}/waiting`)}
+                        className="shrink-0 inline-flex items-center gap-1.5 rounded-xl border border-slate-200 bg-white px-4 py-2 text-xs font-bold text-slate-700 shadow-xs hover:border-slate-300 hover:bg-slate-50 disabled:opacity-40"
+                      >
+                        Enter Test
+                        <ArrowRightIcon className="h-3.5 w-3.5" />
+                      </button>
+                    </li>
+                  );
+                })}
+              </ul>
+            </div>
+          )}
                       <span className="inline-flex items-center gap-1.5 font-medium">
                         <MapPinIcon className="h-4 w-4 text-slate-400" />
                         {eventConfig.venueBlock}, {eventConfig.venueRooms}

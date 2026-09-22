@@ -147,7 +147,7 @@ export function TestManagement() {
 
   const filtered = useMemo(() => {
     return displayTests.filter((t) => {
-      const matchType = !typeFilter || t.typeLabel.toLowerCase().includes(typeFilter.toLowerCase());
+      const matchType = !typeFilter || t.type === typeFilter;
       const matchStatus = !statusFilter || t.status.toLowerCase() === statusFilter.toLowerCase();
       const matchSearch = !search || t.name.toLowerCase().includes(search.toLowerCase());
       return matchType && matchStatus && matchSearch;
@@ -210,11 +210,15 @@ export function TestManagement() {
                 className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs sm:text-sm font-medium text-slate-700 focus:border-brand-500 focus:outline-none"
               >
                 <option value="">All Types</option>
-                <option value="Mixed">Mixed</option>
-                <option value="Debugging">Debugging</option>
-                <option value="Fill in Blank">Fill in Blank</option>
-                <option value="Programming">Programming</option>
-                <option value="Output">Output</option>
+                <option value="MIXED">Mixed</option>
+                <option value="QUIZ">Quiz</option>
+                <option value="MCQ">MCQ</option>
+                <option value="TRUE_FALSE">True / False</option>
+                <option value="FILL_BLANK">Fill in Blank</option>
+                <option value="OUTPUT">Output</option>
+                <option value="CODE_COMPLETION">Code Completion</option>
+                <option value="DEBUGGING">Debugging</option>
+                <option value="CODING">Programming</option>
               </select>
             </div>
 

@@ -224,6 +224,22 @@ export function Exam() {
           </div>
         </header>
 
+        {/* Staff Lock Overlay — shown while examination staff have the attempt locked */}
+        {state.staffLocked && !state.submitted && !state.fullscreenBlocked && !state.devtoolsOpen && (
+          <div className="fixed inset-0 flex items-center justify-center p-6" style={{ zIndex: 999998, backgroundColor: 'rgba(15, 23, 42, 0.98)', width: '100vw', height: '100vh' }}>
+            <div className="w-full max-w-[450px] rounded-xl bg-[#24324d] p-10 text-center shadow-[0px_10px_30px_rgba(0,0,0,0.5)]">
+              <div className="mx-auto mb-5 flex h-16 w-16 items-center justify-center rounded-full bg-amber-500/20 text-amber-400 border-2 border-amber-400/40 text-3xl">🔒</div>
+              <h2 className="text-2xl font-black text-white">Exam Locked by Staff</h2>
+              <p className="mt-3 text-sm leading-relaxed text-slate-300">
+                {state.lockReason
+                  ? <><strong className="text-amber-400">Reason:</strong> {state.lockReason}</>
+                  : 'A staff member has paused the exam. Your screen is frozen until they unlock it.'}
+              </p>
+              <p className="warning mt-2 text-xs font-bold text-[#fbbf24]">Please raise your hand and wait for the examiner.</p>
+            </div>
+          </div>
+        )}
+
         {/* Lock Screen Overlay — hidden by default, covers 100vw/100vh with z-index 999999 when violation happens */}
         {state.fullscreenBlocked && !state.devtoolsOpen && (
           <div id="lockout-screen" className="fixed inset-0 flex items-center justify-center p-6" style={{ zIndex: 999999, backgroundColor: 'rgba(15, 23, 42, 0.98)', width: '100vw', height: '100vh' }}>
@@ -295,7 +311,7 @@ export function Exam() {
         )}
 
         {/* 2-Column Exam Body — hidden when blocked */}
-        <div className={`flex min-h-0 flex-1 ${(state.fullscreenBlocked || state.devtoolsOpen) ? 'invisible h-0 overflow-hidden' : ''}`}>
+        <div className={`flex min-h-0 flex-1 ${(state.fullscreenBlocked || state.devtoolsOpen || state.staffLocked) ? 'invisible h-0 overflow-hidden' : ''}`}>
           {/* Left Question Navigator */}
           <aside className="w-72 shrink-0 border-r border-slate-200 bg-white p-5">
             <QuestionNavigator states={navStates} counts={counts} onSelect={goTo} />
@@ -310,7 +326,7 @@ export function Exam() {
                     index={state.current}
                     question={question}
                     value={state.answers[question.id] ?? ''}
-                    locked={Boolean(meta?.locked)}
+                    locked={Boolean(meta?.locked) || state.staffLocked}
                     editGranted={Boolean(meta?.editGranted)}
                     flagged={Boolean(state.flagged[question.id])}
                     onChange={(value) => setAnswer(question.id, value)}
