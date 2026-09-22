@@ -310,8 +310,10 @@ export function useExamAttempt(testId: string) {
     };
     const onBlur = () => {
       if (document.hidden || stateRef.current.submitted) return;
-      // Any window blur (Alt+Tab, click outside, multitask) → lock
-      doLock('WINDOW_BLUR', 'You left the exam window (multitasking detected). The exam is locked until staff unlocks it.');
+      // Window blur (Alt+Tab, click outside) — record quietly but never banner
+      // or lock. Real tab switches are caught by onVisibility (document.hidden);
+      // gaining focus back resumes normally instead of requiring staff.
+      report('FOCUS_LOST', 'Window focus left the exam (blur).');
     };
     const onPageHide = () => {
       if (!stateRef.current.submitted) doLock('PAGE_HIDE', 'You navigated away. The exam is locked.');
@@ -446,13 +448,15 @@ export function useExamAttempt(testId: string) {
       e.preventDefault();
     };
 
-    // Banking-style DevTools detection (runs every 500ms for fast response)
+    // Banking-style DevTools detection (window-size only — the debugger-timing
+    // probe was removed: it false-positives on slow machines/loaded tabs and
+    // locked honest students out with fake violations + auto-submits).
     let devtoolsDetected = false;
     let devtoolsViolationCount = 0;
     const detectDevTools = () => {
       if (stateRef.current.submitted) return;
 
-      // Method 1: Window size difference (detects docked DevTools)
+      // Window size difference (detects docked DevTools — reliable)
       const widthDiff = window.outerWidth - window.innerWidth;
       const heightDiff = window.outerHeight - window.innerHeight;
       const threshold = 150;
@@ -481,39 +485,15 @@ export function useExamAttempt(testId: string) {
         devtoolsDetected = false;
         setState((prev) => ({ ...prev, devtoolsOpen: false }));
       }
-
-      // Method 2: Debugger timing (detects undocked DevTools)
-      if (!devtoolsDetected) {
-        const start = performance.now();
-        // eslint-disable-next-line no-debugger
-        debugger;
-        const elapsed = performance.now() - start;
-        if (elapsed > 80) {
-          devtoolsDetected = true;
-          devtoolsViolationCount++;
-          report('DEVTOOLS_ATTEMPT', `DevTools detected via debugger timing #${devtoolsViolationCount}`);
-          bumpViolation('Developer Tools detected! Close DevTools immediately.');
-          setState((prev) => ({ ...prev, devtoolsOpen: true }));
-
-          if (devtoolsViolationCount >= 3) {
-            report('DEVTOOLS_AUTO_SUBMIT', `Auto-submit after ${devtoolsViolationCount} DevTools violations`);
-            bumpViolation('Too many DevTools violations. Auto-submitting your exam.');
-            setTimeout(() => {
-              if (!stateRef.current.submitted) {
-                submitRef.current('FORCE_SUBMITTED');
-              }
-            }, 2000);
-          }
-        }
-      }
     };
 
     const devtoolsInterval = window.setInterval(detectDevTools, 500);
 
-    // Multitask / focus-loss polling — catches Alt+Tab, Win+Tab, split-screen, clicking outside
+    // Focus-loss polling — records Alt+Tab / click-outside observations quietly
+    // (never locks). Hard locks are reserved for hidden-tab and fullscreen exits.
     const focusInterval = window.setInterval(() => {
       if (!document.hasFocus() && !document.hidden && !stateRef.current.submitted && !stateRef.current.fullscreenBlocked) {
-        doLock('FOCUS_LOST', 'You left the exam window (multitasking detected). The exam is locked until staff unlocks it.');
+        report('FOCUS_LOST', 'Window focus lost (multitasking).');
       }
     }, 700);
 

@@ -101,7 +101,9 @@ export function PortalLayout({ portalLabel, navItems, children, headerRight, nav
       if (e.altKey) { e.preventDefault(); e.stopPropagation(); logViolation('COPY_BLOCKED', `Alt+${key} blocked`); }
     };
 
-    // Banking-style DevTools open detection (docked/undocked) so Inspect & F12 can be policed
+    // Banking-style DevTools open detection (docked/undocked) so Inspect & F12 can be policed.
+    // Window-size heuristic only — the debugger-timing probe false-positives on slow
+    // machines / loaded tabs and flagged honest students every few minutes.
     let devtoolsDetected = false;
     let violationCount = 0;
     const detectDevTools = () => {
@@ -118,36 +120,24 @@ export function PortalLayout({ portalLabel, navItems, children, headerRight, nav
         devtoolsDetected = false;
         setDevtoolsOpen(false);
       }
-      if (!devtoolsDetected) {
-        const start = performance.now();
-        // eslint-disable-next-line no-debugger
-        debugger;
-        if (performance.now() - start > 80) {
-          devtoolsDetected = true;
-          violationCount++;
-          setDevtoolsViolations(violationCount);
-          api.reportEvent('DEVTOOLS_ATTEMPT', `DevTools detected via debugger timing #${violationCount}`).catch(() => undefined);
-          setDevtoolsOpen(true);
-        }
-      }
     };
     const devtoolsInterval = window.setInterval(detectDevTools, 500);
 
-    // Tab-switch / window-loss guard — the moment the student leaves this tab, block the portal
+    // Tab-switch / window-loss guard — only a real hidden tab (switch/minimize)
+    // blocks. A plain window blur (clicking notifications, other windows) just
+    // records quietly so honest students are never locked out.
     const checkFocus = () => {
-      const away = document.hidden || !document.hasFocus();
-      if (away && !tabBlockedRef.current) {
+      const hidden = document.hidden;
+      if (hidden && !tabBlockedRef.current) {
         tabBlockedRef.current = true;
         setTabBlocked(true);
-        api.reportEvent('FOCUS_LOST', 'Student switched tabs or left the portal window').catch(() => undefined);
-      } else if (!away && tabBlockedRef.current) {
+        api.reportEvent('FOCUS_LOST', 'Student switched tabs or minimized the portal window').catch(() => undefined);
+      } else if (!hidden && tabBlockedRef.current) {
         tabBlockedRef.current = false;
         setTabBlocked(false);
       }
     };
     document.addEventListener('visibilitychange', checkFocus);
-    window.addEventListener('blur', checkFocus);
-    window.addEventListener('focus', checkFocus);
 
     document.addEventListener('contextmenu', onContextMenu, true);
     document.addEventListener('copy', onCopy, true);
@@ -163,8 +153,6 @@ export function PortalLayout({ portalLabel, navItems, children, headerRight, nav
       document.removeEventListener('dragstart', onDragStart, true);
       window.removeEventListener('keydown', onKeyDown, true);
       document.removeEventListener('visibilitychange', checkFocus);
-      window.removeEventListener('blur', checkFocus);
-      window.removeEventListener('focus', checkFocus);
       window.clearInterval(devtoolsInterval);
     };
   }, [isStudent]);
