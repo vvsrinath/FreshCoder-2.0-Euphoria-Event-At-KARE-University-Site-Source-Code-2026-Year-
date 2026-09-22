@@ -37,7 +37,16 @@ async function selectQuestionIds(test: Row): Promise<string[]> {
   let picked: string[] = [];
 
   if (mode === "MANUAL") {
-    const manual = (loads(str(test["manual_question_ids"]), []) as unknown[]) as string[];
+    // Prefer the test's own question set (the order set by staff in the
+    // workspace Questions tab). Fall back to the manual id list only when the
+    // test has no questions added to it yet.
+    const ordered = await query(
+      "SELECT q.id FROM test_questions tq JOIN questions q ON q.id = tq.question_id WHERE tq.test_id = ? AND q.status = 'ACTIVE' ORDER BY tq.position",
+      [test["id"]]
+    );
+    const manual = ordered.length
+      ? ordered.map((r) => str(r["id"]))
+      : (loads(str(test["manual_question_ids"]), []) as unknown[]) as string[];
     const available = new Set(active.map((row) => str(row["id"])));
     picked = manual.filter((qid) => available.has(qid)).slice(0, questionCount);
   } else if (mode === "DISTRIBUTION") {
@@ -515,6 +524,10 @@ async function startTest(ctx: RouteCtx): Promise<HttpResponse> {
   let attempt = await queryOne("SELECT * FROM attempts WHERE test_id = ? AND student_id = ?", [testId, ctx.user.id]);
 
   if (attempt === undefined) {
+    const questionIds = await selectQuestionIds(test);
+    if (questionIds.length === 0) {
+      throw new ApiError(409, "This test has no questions available yet. Staff must add questions before students can take it.");
+    }
     const started = new Date();
     const deadline = new Date(started.getTime() + num(test["duration_minutes"]) * 60_000);
     const attemptId = `AT${uuidHex(10)}`;
@@ -524,7 +537,7 @@ async function startTest(ctx: RouteCtx): Promise<HttpResponse> {
         attemptId,
         testId,
         ctx.user.id,
-        JSON.stringify(await selectQuestionIds(test)),
+        JSON.stringify(questionIds),
         started.toISOString(),
         deadline.toISOString(),
         utcNow(),
