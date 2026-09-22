@@ -26,7 +26,7 @@ const MIGRATIONS = [
 // Remove residue created during live smoke tests (idempotent; already-deleted
 // ids are no-ops). Children first, in FK-safe order, scoped by attempts under
 // the test so any number of attempts for the test are covered.
-const TEST_RESIDUE = ["T2B4E0C83", "TC264F77A", "T66B4B88E", "TAABC3492", "T22B2EB24"];
+const TEST_RESIDUE = ["T2B4E0C83", "TC264F77A", "T66B4B88E", "TAABC3492", "T22B2EB24", "TF87D0B2A"];
 const CLEANUPS = TEST_RESIDUE.flatMap((tid) => [
   `DELETE FROM security_events WHERE attempt_id IN (SELECT id FROM attempts WHERE test_id = '${tid}')`,
   `DELETE FROM frozen_questions WHERE attempt_id IN (SELECT id FROM attempts WHERE test_id = '${tid}')`,
@@ -40,6 +40,13 @@ const CLEANUPS = TEST_RESIDUE.flatMap((tid) => [
   `DELETE FROM security_events WHERE test_id = '${tid}'`,
   `DELETE FROM tests WHERE id = '${tid}'`,
 ]);
+
+// Test-added questions left orphaned by the residue above (referenced only by
+// those now-deleted attempts/test_questions). Delete after the test cascade.
+const QUESTION_RESIDUE = ["QE369B2"];
+for (const qid of QUESTION_RESIDUE) {
+  CLEANUPS.push(`DELETE FROM questions WHERE id = '${qid}'`);
+}
 
 const client = createClient({
   url: url.replace(/^libsql:/, "https:"),
