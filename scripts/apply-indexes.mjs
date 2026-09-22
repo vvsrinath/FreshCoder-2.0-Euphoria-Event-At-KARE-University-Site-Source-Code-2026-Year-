@@ -24,12 +24,13 @@ const MIGRATIONS = [
 ];
 
 const CLEANUPS = [
-  // Diagnostic: how many child rows still reference the UAT test before we delete.
-  `INSERT INTO security_events (type, actor, role, detail, created_at) SELECT 'UAT_RESIDUE', 'SYSTEM', 'SYSTEM', 'test_questions='||(SELECT COUNT(*) FROM test_questions WHERE test_id='T2B4E0C83')||' assignments='||(SELECT COUNT(*) FROM student_test_assignments WHERE test_id='T2B4E0C83')||' attempts='||(SELECT COUNT(*) FROM attempts WHERE test_id='T2B4E0C83')||' edit_requests='||(SELECT COUNT(*) FROM edit_requests WHERE test_id='T2B4E0C83')||' results='||(SELECT COUNT(*) FROM results WHERE test_id='T2B4E0C83')||' timing='||(SELECT COUNT(*) FROM timing_changes WHERE test_id='T2B4E0C83'), strftime('%Y-%m-%dT%H:%M:%f+00:00', 'now')`,
-  `DELETE FROM security_events WHERE attempt_id = 'ATF08151B8B5FE1043F56E'`,
-  `DELETE FROM frozen_questions WHERE attempt_id = 'ATF08151B8B5FE1043F56E'`,
-  `DELETE FROM answers WHERE attempt_id = 'ATF08151B8B5FE1043F56E'`,
-  `DELETE FROM edit_requests WHERE attempt_id = 'ATF08151B8B5FE1043F56E' OR test_id = 'T2B4E0C83'`,
+  // Remove the UAT/smoke-test residue created during live verification (idempotent).
+  // Children first, in FK-safe order, scoped by attempts under the test so any
+  // number of attempts (incl. ones created after the smoke test) are covered.
+  `DELETE FROM security_events WHERE attempt_id IN (SELECT id FROM attempts WHERE test_id = 'T2B4E0C83')`,
+  `DELETE FROM frozen_questions WHERE attempt_id IN (SELECT id FROM attempts WHERE test_id = 'T2B4E0C83')`,
+  `DELETE FROM answers WHERE attempt_id IN (SELECT id FROM attempts WHERE test_id = 'T2B4E0C83')`,
+  `DELETE FROM edit_requests WHERE attempt_id IN (SELECT id FROM attempts WHERE test_id = 'T2B4E0C83') OR test_id = 'T2B4E0C83'`,
   `DELETE FROM results WHERE test_id = 'T2B4E0C83'`,
   `DELETE FROM attempts WHERE test_id = 'T2B4E0C83'`,
   `DELETE FROM test_questions WHERE test_id = 'T2B4E0C83'`,
