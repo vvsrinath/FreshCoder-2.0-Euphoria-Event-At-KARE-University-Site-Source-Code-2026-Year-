@@ -63,8 +63,13 @@ try {
     }
   }
   for (const sql of CLEANUPS) {
-    const res = await client.execute(sql);
-    console.log(`[apply-indexes] cleanup ok (${res.rowsAffected} rows): ${sql}`);
+    try {
+      const res = await client.execute(sql);
+      const affected = typeof res.rowsAffected === "bigint" ? res.rowsAffected.toString() : String(res.rowsAffected ?? 0);
+      console.log(`[apply-indexes] cleanup ok (${affected} rows): ${sql}`);
+    } catch (error) {
+      console.warn(`[apply-indexes] cleanup skipped (${error.message}): ${sql}`);
+    }
   }
   console.log("[apply-indexes] done.");
 } catch (error) {
