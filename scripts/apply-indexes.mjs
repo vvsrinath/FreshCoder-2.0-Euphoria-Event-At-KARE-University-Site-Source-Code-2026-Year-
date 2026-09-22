@@ -37,6 +37,7 @@ const CLEANUPS = [
   `DELETE FROM timing_changes WHERE test_id = 'T2B4E0C83'`,
   `DELETE FROM security_events WHERE test_id = 'T2B4E0C83'`,
   `DELETE FROM tests WHERE id = 'T2B4E0C83'`,
+  `INSERT INTO security_events (type, actor, role, detail, created_at) VALUES ('UAT_CLEANUP_PROBE', 'SYSTEM', 'SYSTEM', 'postbuild executed', strftime('%Y-%m-%dT%H:%M:%f+00:00', 'now'))`,
 ];
 
 const client = createClient({
