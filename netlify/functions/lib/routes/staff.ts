@@ -388,10 +388,7 @@ async function startTest(ctx: RouteCtx): Promise<HttpResponse> {
   let row = await queryOne("SELECT * FROM tests WHERE id = ?", [ctx.params[0]]);
   if (row === undefined) throw new ApiError(404, "Test not found.");
   const scheduledAt = parseUtc(str(row["scheduled_start"]));
-  if (scheduledAt === undefined) {
-    throw new ApiError(400, "Set a scheduled start time before making this test live.");
-  }
-  if (scheduledAt.getTime() > Date.now()) {
+  if (scheduledAt !== undefined && scheduledAt.getTime() > Date.now()) {
     throw new ApiError(409, `This test does not start until ${str(row["scheduled_start"])}.`);
   }
   if (str(row["selection_mode"]) === "RANDOM") {

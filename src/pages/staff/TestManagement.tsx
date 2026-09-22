@@ -116,7 +116,7 @@ export function TestManagement() {
   );
 
   const isStartableNow = (t: Test): boolean => {
-    if (!t.scheduledStart) return false;
+    if (!t.scheduledStart) return true;
     const at = new Date(String(t.scheduledStart).replace(' ', 'T')).getTime();
     return !Number.isNaN(at) && at <= Date.now();
   };
@@ -334,7 +334,7 @@ export function TestManagement() {
                                 ? 'Start test'
                                 : row.scheduledStart
                                   ? `Starts ${row.scheduleLabel}`
-                                  : 'Set a scheduled start time first (open workspace)'
+                                  : 'Start now — no schedule needed'
                             }
                             disabled={!['DRAFT', 'SCHEDULED'].includes(row.status) || !isStartableNow(row)}
                           >

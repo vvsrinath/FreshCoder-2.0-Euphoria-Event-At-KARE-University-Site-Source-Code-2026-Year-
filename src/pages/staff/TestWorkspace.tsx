@@ -195,9 +195,9 @@ function TestControls({ test, onChanged }: { test: Test; onChanged: () => void }
   };
 
   const scheduledAt = test.scheduledStart ? new Date(String(test.scheduledStart).replace(' ', 'T')).getTime() : null;
-  const startReady = scheduledAt !== null && scheduledAt <= Date.now();
+  const startReady = scheduledAt === null || scheduledAt <= Date.now();
   const startHint = scheduledAt === null
-    ? 'Set a scheduled start time (Details step) before making this test live.'
+    ? undefined
     : !startReady
       ? `This test starts at ${new Date(test.scheduledStart as string).toLocaleString()} and cannot be made live before then.`
       : undefined;
