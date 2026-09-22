@@ -1,20 +1,15 @@
 import React, { useState } from 'react';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
-import { EyeIcon, EyeOffIcon, KeyRoundIcon, LockIcon, UserIcon, ArrowRightIcon } from 'lucide-react';
+import { EyeIcon, EyeOffIcon, LockIcon, UserIcon, ArrowRightIcon } from 'lucide-react';
 import { TextField } from '../components/TextField';
 import { UniversityMark } from '../components/UniversityMark';
 import { GlobalFooter } from '../components/GlobalFooter';
 import { useAuth } from '../contexts/AuthContext';
 import { brand } from '../data/eventConfig';
-import { demoCredentials } from '../data/seedUsers';
 import { cn } from '../utils/cn';
 import { ThemeToggle } from '../components/ThemeToggle';
 
 const CAMPUS_IMAGE = '/landing-hero.jpg';
-
-/** Demo quick-fill accounts are hidden in production unless explicitly enabled. */
-const env = (import.meta as unknown as { env?: Record<string, string> }).env ?? {};
-const SHOW_DEMO = env.MODE !== 'production' || env.VITE_SHOW_DEMO === 'true';
 
 type Portal = 'STUDENT' | 'STAFF' | 'ADMIN';
 
@@ -39,11 +34,6 @@ export function Login() {
   const [loading, setLoading] = useState(false);
 
   const active = portals.find((p) => p.key === portal)!;
-
-  const handleQuickFill = (id: string, pass: string) => {
-    setUserId(id);
-    setPassword(pass);
-  };
 
   const handleSubmit = async (event: React.FormEvent) => {
     event.preventDefault();
@@ -215,28 +205,6 @@ export function Login() {
                 </p>
               </div>
             </div>
-
-            {/* Dev Demo Quick-Fill Accounts */}
-            {SHOW_DEMO ? (
-            <div className="rounded-2xl border border-dashed border-slate-300 bg-white/70 p-4 shadow-sm dark:border-white/15 dark:bg-white/[0.06]">
-              <p className="flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-slate-500">
-                <KeyRoundIcon className="h-3.5 w-3.5 text-brand-500" /> Demo Quick-Fill Credentials
-              </p>
-              <div className="mt-2.5 grid grid-cols-3 gap-2">
-                {demoCredentials.map((cred) => (
-                  <button
-                    key={cred.id}
-                    type="button"
-                    onClick={() => handleQuickFill(cred.id, cred.password)}
-                    className="flex flex-col items-center rounded-lg border border-black/10 bg-white p-2 text-center transition-all hover:border-brand-400 hover:bg-brand-50 dark:border-white/15 dark:bg-white/[0.04] dark:hover:border-brand-400/50 dark:hover:bg-brand-500/10"
-                  >
-                    <span className="text-[11px] font-bold text-navy-800 dark:text-slate-200">{cred.label}</span>
-                    <span className="font-mono text-[10px] text-slate-500">{cred.id}</span>
-                  </button>
-                ))}
-              </div>
-            </div>
-            ) : null}
 
             <p className="text-center text-xs">
               <Link to="/" className="font-semibold text-brand-600 hover:underline dark:text-brand-400">

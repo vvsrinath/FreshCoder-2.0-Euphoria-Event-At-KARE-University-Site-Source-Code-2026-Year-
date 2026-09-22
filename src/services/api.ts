@@ -1,10 +1,8 @@
-import { localRequest } from './server';
-
 /**
  * Single API client.  Resolution order:
  *   1. VITE_API_BASE_URL  – explicit remote backend (e.g. http://localhost:5000)
  *   2. Production build    – same-origin /api  (Netlify Functions)
- *   3. Dev without env var – bundled in-browser mock
+ * Live backend only — no bundled mock.
  */
 const env = (import.meta as unknown as { env?: Record<string, string> }).env ?? {};
 const EXPLICIT_URL = env.VITE_API_BASE_URL || '';
@@ -12,6 +10,10 @@ const IS_PROD = typeof import.meta !== 'undefined' && (import.meta as { env?: { 
 
 // In production on Netlify, call the function URL directly (bypasses redirect issues)
 const API_BASE = EXPLICIT_URL || (IS_PROD ? '/.netlify/functions/api' : '');
+
+if (!API_BASE) {
+  throw new Error('API is not configured. Set VITE_API_BASE_URL or run a production build — the in-browser mock has been removed.');
+}
 
 const TOKEN_KEY = 'fc_session_token';
 
@@ -63,9 +65,8 @@ async function request<T>(method: string, url: string, body?: unknown): Promise<
     return data as T;
   }
 
-  const { status, data } = await localRequest(method, url, body, token);
-  if (status >= 400) throw new ApiRequestError(status, data?.message ?? 'Request failed.');
-  return data as T;
+  // No mock layer. This branch is unreachable at runtime — API_BASE is always set.
+  throw new ApiRequestError(500, 'API is not configured.');
 }
 
 function qs(params: Record<string, string | undefined>): string {

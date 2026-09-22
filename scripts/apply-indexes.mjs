@@ -23,6 +23,15 @@ const MIGRATIONS = [
   "CREATE TABLE IF NOT EXISTS announcements (id TEXT PRIMARY KEY, message TEXT NOT NULL, created_by TEXT NOT NULL REFERENCES users(id), created_at TEXT NOT NULL, expires_at TEXT)",
 ];
 
+const CLEANUPS = [
+  // Remove the UAT/smoke-test residue created during live verification (idempotent).
+  "DELETE FROM security_events WHERE attempt_id = 'ATF08151B8B5FE1043F56E'",
+  "DELETE FROM answers WHERE attempt_id = 'ATF08151B8B5FE1043F56E'",
+  "DELETE FROM results WHERE test_id = 'T2B4E0C83'",
+  "DELETE FROM attempts WHERE test_id = 'T2B4E0C83'",
+  "DELETE FROM tests WHERE id = 'T2B4E0C83'",
+];
+
 const client = createClient({
   url: url.replace(/^libsql:/, "https:"),
   authToken: token,
@@ -52,6 +61,10 @@ try {
         throw error;
       }
     }
+  }
+  for (const sql of CLEANUPS) {
+    const res = await client.execute(sql);
+    console.log(`[apply-indexes] cleanup ok (${res.rowsAffected} rows): ${sql}`);
   }
   console.log("[apply-indexes] done.");
 } catch (error) {
