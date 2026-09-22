@@ -402,6 +402,7 @@ async function startTest(ctx: RouteCtx): Promise<HttpResponse> {
   }
   if (str(row["status"]) === "DRAFT") {
     transition(row, "SCHEDULED");
+    await execute("UPDATE tests SET status = 'SCHEDULED' WHERE id = ?", [ctx.params[0]]);
     row = (await queryOne("SELECT * FROM tests WHERE id = ?", [ctx.params[0]])) as Row;
   }
   transition(row, "ACTIVE");
