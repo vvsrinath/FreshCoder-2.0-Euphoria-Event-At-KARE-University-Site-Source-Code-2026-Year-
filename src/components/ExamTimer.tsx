@@ -18,24 +18,25 @@ export function ExamTimer({
 }: {deadline: string | null;serverOffsetMs: number;onExpire: () => void;}) {
   const [remaining, setRemaining] = useState(0);
   const fired = useRef(false);
+  const onExpireRef = useRef(onExpire);
+  onExpireRef.current = onExpire;
 
   useEffect(() => {
     if (!deadline) return undefined;
     fired.current = false;
     const tick = () => {
       const target = new Date(deadline).getTime();
-      const nowServer = Date.now() + serverOffsetMs;
-      const seconds = Math.round((target - nowServer) / 1000);
-      setRemaining(seconds);
-      if (seconds <= 0 && !fired.current) {
+      const ms = target - (Date.now() + serverOffsetMs);
+      setRemaining(Math.ceil(ms / 1000));
+      if (ms <= 0 && !fired.current) {
         fired.current = true;
-        onExpire();
+        onExpireRef.current();
       }
     };
     tick();
     const id = window.setInterval(tick, 1000);
     return () => window.clearInterval(id);
-  }, [deadline, serverOffsetMs, onExpire]);
+  }, [deadline, serverOffsetMs]);
 
   const critical = remaining <= 300;
 

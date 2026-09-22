@@ -53,6 +53,7 @@ const TestWorkspace = lazyPage(() => import('./pages/staff/TestWorkspace'), 'Tes
 const StaffStudents = lazyPage(() => import('./pages/staff/StaffStudents'), 'StaffStudents');
 const StaffProfile = lazyPage(() => import('./pages/staff/StaffProfile'), 'StaffProfile');
 const EditRequests = lazyPage(() => import('./pages/staff/EditRequests'), 'EditRequests');
+const QuestionBank = lazyPage(() => import('./pages/staff/QuestionBank'), 'QuestionBank');
 const StaffResults = lazyPage(() => import('./pages/staff/StaffResults'), 'StaffResults');
 const SecurityEvents = lazyPage(() => import('./pages/staff/SecurityEvents'), 'SecurityEvents');
 const AuditLogs = lazyPage(() => import('./pages/staff/AuditLogs'), 'AuditLogs');
@@ -201,7 +202,14 @@ export function App() {
               }
             />
 
-            <Route path="/staff/questions" element={<Navigate to="/staff/tests" replace />} />
+            <Route
+              path="/staff/questions"
+              element={
+                <ProtectedRoute roles={['STAFF', 'SUPER_ADMIN']}>
+                  <QuestionBank />
+                </ProtectedRoute>
+              }
+            />
 
             <Route path="/staff/live" element={<Navigate to="/staff/tests" replace />} />
 

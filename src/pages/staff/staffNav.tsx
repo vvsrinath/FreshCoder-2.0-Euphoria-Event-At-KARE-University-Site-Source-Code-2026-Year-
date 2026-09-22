@@ -3,7 +3,9 @@ import {
   ActivityIcon,
   ClipboardListIcon,
   FileBarChart2Icon,
+  FolderOpenIcon,
   LayoutDashboardIcon,
+  ListChecksIcon,
   LogOutIcon,
   PencilLineIcon,
   ShieldAlertIcon,
@@ -18,10 +20,12 @@ import { useAuth } from '../../contexts/AuthContext';
 export const staffNav: NavItem[] = [
   { to: '/staff', label: 'Dashboard', icon: <LayoutDashboardIcon className="h-4 w-4" /> },
   { to: '/staff/tests', label: 'Tests', icon: <ClipboardListIcon className="h-4 w-4" /> },
+  { to: '/staff/questions', label: 'Questions', icon: <FolderOpenIcon className="h-4 w-4" /> },
   { to: '/staff/students', label: 'Students', icon: <UsersIcon className="h-4 w-4" /> },
   { to: '/staff/results', label: 'Results', icon: <FileBarChart2Icon className="h-4 w-4" /> },
   { to: '/staff/edit-requests', label: 'Requests', icon: <PencilLineIcon className="h-4 w-4" /> },
-  { to: '/staff/security', label: 'Security', icon: <ShieldAlertIcon className="h-4 w-4" /> }];
+  { to: '/staff/security', label: 'Security', icon: <ShieldAlertIcon className="h-4 w-4" /> },
+  { to: '/staff/audit', label: 'Audit Logs', icon: <ListChecksIcon className="h-4 w-4" /> }];
 
 export function StaffNavFooter() {
   const { logout } = useAuth();
