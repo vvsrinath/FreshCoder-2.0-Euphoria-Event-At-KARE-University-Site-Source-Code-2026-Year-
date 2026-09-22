@@ -23,23 +23,23 @@ const MIGRATIONS = [
   "CREATE TABLE IF NOT EXISTS announcements (id TEXT PRIMARY KEY, message TEXT NOT NULL, created_by TEXT NOT NULL REFERENCES users(id), created_at TEXT NOT NULL, expires_at TEXT)",
 ];
 
-const CLEANUPS = [
-  // Remove the UAT/smoke-test residue created during live verification (idempotent).
-  // Children first, in FK-safe order, scoped by attempts under the test so any
-  // number of attempts (incl. ones created after the smoke test) are covered.
-  `DELETE FROM security_events WHERE attempt_id IN (SELECT id FROM attempts WHERE test_id = 'T2B4E0C83')`,
-  `DELETE FROM frozen_questions WHERE attempt_id IN (SELECT id FROM attempts WHERE test_id = 'T2B4E0C83')`,
-  `DELETE FROM answers WHERE attempt_id IN (SELECT id FROM attempts WHERE test_id = 'T2B4E0C83')`,
-  `DELETE FROM edit_requests WHERE attempt_id IN (SELECT id FROM attempts WHERE test_id = 'T2B4E0C83') OR test_id = 'T2B4E0C83'`,
-  `DELETE FROM results WHERE test_id = 'T2B4E0C83'`,
-  `DELETE FROM attempts WHERE test_id = 'T2B4E0C83'`,
-  `DELETE FROM test_questions WHERE test_id = 'T2B4E0C83'`,
-  `DELETE FROM student_test_assignments WHERE test_id = 'T2B4E0C83'`,
-  `DELETE FROM timing_changes WHERE test_id = 'T2B4E0C83'`,
-  `DELETE FROM security_events WHERE test_id = 'T2B4E0C83'`,
-  `DELETE FROM tests WHERE id = 'T2B4E0C83'`,
-  `INSERT INTO security_events (type, actor, role, detail, created_at) VALUES ('UAT_CLEANUP_PROBE', 'SYSTEM', 'SYSTEM', 'postbuild executed', strftime('%Y-%m-%dT%H:%M:%f+00:00', 'now'))`,
-];
+// Remove residue created during live smoke tests (idempotent; already-deleted
+// ids are no-ops). Children first, in FK-safe order, scoped by attempts under
+// the test so any number of attempts for the test are covered.
+const TEST_RESIDUE = ["T2B4E0C83", "TC264F77A", "T66B4B88E", "TAABC3492", "T22B2EB24"];
+const CLEANUPS = TEST_RESIDUE.flatMap((tid) => [
+  `DELETE FROM security_events WHERE attempt_id IN (SELECT id FROM attempts WHERE test_id = '${tid}')`,
+  `DELETE FROM frozen_questions WHERE attempt_id IN (SELECT id FROM attempts WHERE test_id = '${tid}')`,
+  `DELETE FROM answers WHERE attempt_id IN (SELECT id FROM attempts WHERE test_id = '${tid}')`,
+  `DELETE FROM edit_requests WHERE attempt_id IN (SELECT id FROM attempts WHERE test_id = '${tid}') OR test_id = '${tid}'`,
+  `DELETE FROM results WHERE test_id = '${tid}'`,
+  `DELETE FROM attempts WHERE test_id = '${tid}'`,
+  `DELETE FROM test_questions WHERE test_id = '${tid}'`,
+  `DELETE FROM student_test_assignments WHERE test_id = '${tid}'`,
+  `DELETE FROM timing_changes WHERE test_id = '${tid}'`,
+  `DELETE FROM security_events WHERE test_id = '${tid}'`,
+  `DELETE FROM tests WHERE id = '${tid}'`,
+]);
 
 const client = createClient({
   url: url.replace(/^libsql:/, "https:"),
