@@ -213,7 +213,9 @@ async function assignStaffRole(ctx: RouteCtx): Promise<HttpResponse> {
       "SELECT COUNT(*) n FROM users WHERE role = 'SUPER_ADMIN' AND active = 1",
       []
     );
-    if (num(activeAdmins?.["n"]) <= 1) throw new ApiError(400, "At least one active admin must remain.");
+    if (bool(row["active"]) && num(activeAdmins?.["n"]) <= 1) {
+      throw new ApiError(400, "At least one active admin must remain.");
+    }
     await execute("UPDATE users SET role = 'STAFF' WHERE id = ?", [userId]);
     await revokeUserSessions(userId);
     await audit(ctx.user.id, ctx.user.role, "Removed admin role", userId, str(row["name"]));
