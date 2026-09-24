@@ -19,6 +19,7 @@ function userToJson(row: Row): Record<string, unknown> {
     id: row["id"],
     name: row["name"],
     email: row["email"],
+    role: row["role"],
     active: bool(row["active"]),
     createdAt: row["created_at"],
   };
@@ -169,7 +170,22 @@ async function importStudents(ctx: RouteCtx): Promise<HttpResponse> {
 }
 
 async function staffAccounts(ctx: RouteCtx): Promise<HttpResponse> {
-  return ok({ staff: await listUsers("STAFF", ctx) });
+  return ok({ staff: await listAdminStaff(ctx) });
+}
+
+async function listAdminStaff(ctx: RouteCtx): Promise<Record<string, unknown>[]> {
+  let sql = "SELECT * FROM users WHERE role IN ('STAFF', 'SUPER_ADMIN')";
+  const params: unknown[] = [];
+  const status = ctx.query["status"];
+  if (status === "ACTIVE") sql += " AND active = 1";
+  else if (status === "INACTIVE") sql += " AND active = 0";
+  const search = ctx.query["search"];
+  if (search) {
+    sql += " AND (LOWER(id) LIKE ? OR LOWER(name) LIKE ?)";
+    const term = `%${search.toLowerCase()}%`;
+    params.push(term, term);
+  }
+  return (await query(sql + " ORDER BY id", params)).map(userToJson);
 }
 
 async function createStaff(ctx: RouteCtx): Promise<HttpResponse> {
@@ -178,6 +194,33 @@ async function createStaff(ctx: RouteCtx): Promise<HttpResponse> {
 
 async function updateStaff(ctx: RouteCtx): Promise<HttpResponse> {
   return ok({ staff: userToJson(await updateAccount(ctx.params[0], "STAFF", ctx)) });
+}
+
+async function assignStaffRole(ctx: RouteCtx): Promise<HttpResponse> {
+  const userId = String(ctx.params[0]).toUpperCase();
+  const next = str(ctx.body["role"] ?? "").toUpperCase();
+  if (!["SUPER_ADMIN", "STAFF"].includes(next)) throw new ApiError(400, "Role must be SUPER_ADMIN or STAFF.");
+  const row = await queryOne("SELECT * FROM users WHERE id = ? AND role IN ('STAFF', 'SUPER_ADMIN')", [userId]);
+  if (row === undefined) throw new ApiError(404, "Account not found.");
+  const current = str(row["role"]);
+  if (next === current) return ok({ staff: userToJson(row) });
+  if (next === "SUPER_ADMIN") {
+    await execute("UPDATE users SET role = 'SUPER_ADMIN' WHERE id = ?", [userId]);
+    await audit(ctx.user.id, ctx.user.role, "Assigned admin role", userId, str(row["name"]));
+  } else {
+    if (userId === ctx.user.id) throw new ApiError(400, "You cannot remove your own admin role.");
+    const activeAdmins = await queryOne(
+      "SELECT COUNT(*) n FROM users WHERE role = 'SUPER_ADMIN' AND active = 1",
+      []
+    );
+    if (num(activeAdmins?.["n"]) <= 1) throw new ApiError(400, "At least one active admin must remain.");
+    await execute("UPDATE users SET role = 'STAFF' WHERE id = ?", [userId]);
+    await revokeUserSessions(userId);
+    await audit(ctx.user.id, ctx.user.role, "Removed admin role", userId, str(row["name"]));
+  }
+  const fresh = await queryOne("SELECT * FROM users WHERE id = ?", [userId]);
+  if (fresh === undefined) throw new ApiError(500, "Unexpected server error.");
+  return ok({ staff: userToJson(fresh) });
 }
 
 async function events(_ctx: RouteCtx): Promise<HttpResponse> {
@@ -436,6 +479,7 @@ export const adminRoutes: RouteDef[] = [
   { method: "GET", pattern: /^\/api\/admin\/staff$/, roles: SUPER_ADMIN, handler: staffAccounts },
   { method: "POST", pattern: /^\/api\/admin\/staff$/, roles: SUPER_ADMIN, handler: createStaff },
   { method: "PUT", pattern: /^\/api\/admin\/staff\/([^/]+)$/, roles: SUPER_ADMIN, handler: updateStaff },
+  { method: "PUT", pattern: /^\/api\/admin\/staff\/([^/]+)\/role$/, roles: SUPER_ADMIN, handler: assignStaffRole },
   { method: "GET", pattern: /^\/api\/admin\/events$/, roles: ["SUPER_ADMIN", "STAFF"], handler: events },
   { method: "POST", pattern: /^\/api\/admin\/events$/, roles: SUPER_ADMIN, handler: createEvent },
   { method: "PUT", pattern: /^\/api\/admin\/events\/([^/]+)$/, roles: SUPER_ADMIN, handler: updateEvent },

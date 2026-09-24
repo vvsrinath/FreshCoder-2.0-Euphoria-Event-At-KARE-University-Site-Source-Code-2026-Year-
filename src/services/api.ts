@@ -192,6 +192,8 @@ export const api = {
   request<any>('GET', `/api/admin/staff${qs(filters)}`),
   createStaff: (payload: unknown) => request<any>('POST', '/api/admin/staff', payload),
   updateStaff: (id: string, payload: unknown) => request<any>('PUT', `/api/admin/staff/${id}`, payload),
+  assignStaffRole: (id: string, role: 'SUPER_ADMIN' | 'STAFF') =>
+  request<any>('PUT', `/api/admin/staff/${id}/role`, { role }),
   events: () => request<any>('GET', '/api/admin/events'),
   createEvent: (payload: unknown) => request<any>('POST', '/api/admin/events', payload),
   updateEvent: (id: string, payload: unknown) => request<any>('PUT', `/api/admin/events/${id}`, payload),
