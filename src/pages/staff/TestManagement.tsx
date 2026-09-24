@@ -2,6 +2,7 @@ import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   ArrowRightIcon,
+  DatabaseZapIcon,
   PlayIcon,
   PlusIcon,
   SearchIcon,
@@ -13,8 +14,10 @@ import { LoadingState } from '../../components/LoadingState';
 import { ErrorState } from '../../components/ErrorState';
 import { EmptyState } from '../../components/EmptyState';
 import { Button } from '../../components/Button';
+import { ConfirmDialog } from '../../components/ConfirmDialog';
 import { StaffNavFooter, staffNav } from './staffNav';
 import { api } from '../../services/api';
+import { useAuth } from '../../contexts/AuthContext';
 import type { Test } from '../../types';
 import { useLive } from '../../hooks/useLive';
 
@@ -68,6 +71,7 @@ function statusBadge(status: string) {
 
 export function TestManagement() {
   const navigate = useNavigate();
+  const { user } = useAuth();
   const [tests, setTests] = useState<Test[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -134,6 +138,24 @@ export function TestManagement() {
     },
     [load]
   );
+
+  const [hardDeleteTarget, setHardDeleteTarget] = useState<Test | null>(null);
+  const [hardDeleting, setHardDeleting] = useState(false);
+
+  const doHardDelete = async () => {
+    if (!hardDeleteTarget) return;
+    setHardDeleting(true);
+    try {
+      await api.adminDeleteTest(hardDeleteTarget.id);
+      toast.success(`Deleted ${hardDeleteTarget.name} — all attempts and results removed.`);
+      setHardDeleteTarget(null);
+      load();
+    } catch (err) {
+      toast.error((err as Error).message);
+    } finally {
+      setHardDeleting(false);
+    }
+  };
 
   const displayTests = useMemo(
     () =>
@@ -361,6 +383,17 @@ export function TestManagement() {
                           >
                             <Trash2Icon className="h-4 w-4" />
                           </button>
+                          {user?.role === 'SUPER_ADMIN' && (
+                            <button
+                              type="button"
+                              onClick={() => setHardDeleteTarget(row)}
+                              className="rounded-lg p-1.5 text-red-600 hover:bg-red-50 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+                              title="Delete permanently — removes the test and all its data"
+                              disabled={['ACTIVE', 'PAUSED'].includes(row.status)}
+                            >
+                              <DatabaseZapIcon className="h-4 w-4" />
+                            </button>
+                          )}
                         </div>
                       </td>
                     </tr>
@@ -371,6 +404,16 @@ export function TestManagement() {
           </div>
         </div>
       </div>
+      <ConfirmDialog
+        open={Boolean(hardDeleteTarget)}
+        title={`Delete ${hardDeleteTarget?.name ?? 'test'} permanently?`}
+        message={`This removes the test and every attempt, answer and result for it from the database. This cannot be undone.`}
+        confirmLabel="Delete permanently"
+        destructive
+        loading={hardDeleting}
+        onConfirm={doHardDelete}
+        onCancel={() => setHardDeleteTarget(null)}
+      />
     </PortalLayout>
   );
 }
