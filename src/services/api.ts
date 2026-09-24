@@ -194,5 +194,7 @@ export const api = {
   updateStaff: (id: string, payload: unknown) => request<any>('PUT', `/api/admin/staff/${id}`, payload),
   events: () => request<any>('GET', '/api/admin/events'),
   createEvent: (payload: unknown) => request<any>('POST', '/api/admin/events', payload),
-  updateEvent: (id: string, payload: unknown) => request<any>('PUT', `/api/admin/events/${id}`, payload)
+  updateEvent: (id: string, payload: unknown) => request<any>('PUT', `/api/admin/events/${id}`, payload),
+  adminTests: () => request<any>('GET', '/api/admin/tests'),
+  adminDeleteTest: (id: string) => request<any>('DELETE', `/api/admin/tests/${id}`)
 };

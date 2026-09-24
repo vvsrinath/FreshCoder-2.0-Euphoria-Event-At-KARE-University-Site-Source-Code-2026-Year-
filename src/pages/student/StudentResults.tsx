@@ -132,22 +132,25 @@ export function StudentResults() {
                     ) : reviews[result.id] ? (
                       <ul className="divide-y divide-slate-100 rounded-xl border border-slate-200">
                         {reviews[result.id].map((q, i) => {
+                          const pending = q.correct === null;
+                          const unanswered = q.correct === false && !(q.given ?? '').trim();
                           const correct = q.correct === true;
-                          const wrong = q.correct === false;
                           return (
                             <li key={q.questionId} className="flex items-center justify-between gap-4 px-4 py-3">
                               <div className="flex min-w-0 items-center gap-3">
                                 <span className="text-sm font-bold text-slate-700">Q{i + 1}</span>
                                 <span
                                   className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-[11px] font-bold ${
-                                    correct
-                                  ? 'bg-emerald-100 text-emerald-700'
-                                  : wrong
-                                    ? 'bg-red-100 text-red-700'
-                                    : 'bg-slate-100 text-slate-600'
+                                    pending
+                                  ? 'bg-sky-100 text-sky-700'
+                                  : correct
+                                    ? 'bg-emerald-100 text-emerald-700'
+                                    : unanswered
+                                      ? 'bg-slate-100 text-slate-600'
+                                      : 'bg-red-100 text-red-700'
                                   }`}
                                 >
-                                  {correct ? 'Correct' : wrong ? 'Wrong' : 'Unanswered'}
+                                  {pending ? 'Pending review' : correct ? 'Correct' : unanswered ? 'Unanswered' : 'Wrong'}
                                 </span>
                                 {q.overridden && (
                                   <span className="inline-flex items-center rounded-full bg-amber-100 px-2.5 py-0.5 text-[11px] font-bold text-amber-700">

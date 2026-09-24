@@ -253,16 +253,26 @@ export async function finalizeAttempt(
     for (const [qid, val] of inserts) params.push(attempt["id"], qid, val, now);
     await execute(
       "INSERT INTO answers (attempt_id, question_id, value, locked, edit_granted, updated_at) VALUES " +
-        new Array(inserts.length).fill("(?, ?, ?, 1, 0, ?)").join(", "),
+        new Array(inserts.length).fill("(?, ?, ?, 0, 0, ?)").join(", "),
       params
     );
     for (const [qid] of inserts) wrote.add(qid);
   }
   for (const [qid, val] of updates) {
-    await execute(
-      "UPDATE answers SET value = ?, locked = 1, edit_granted = 0, updated_at = ? WHERE attempt_id = ? AND question_id = ?",
-      [val, utcNow(), attempt["id"], qid]
-    );
+    const existing = existingMap.get(qid);
+    // Auto-save never locks. Only an explicit "Lock & Next" (lockAnswer) or a staff
+    // lock marks an answer immutable; an approved edit request is consumed on save.
+    if (Number(existing?.["edit_granted"]) === 1) {
+      await execute(
+        "UPDATE answers SET value = ?, locked = 1, edit_granted = 0, updated_at = ? WHERE attempt_id = ? AND question_id = ?",
+        [val, utcNow(), attempt["id"], qid]
+      );
+    } else {
+      await execute(
+        "UPDATE answers SET value = ?, updated_at = ? WHERE attempt_id = ? AND question_id = ?",
+        [val, utcNow(), attempt["id"], qid]
+      );
+    }
     wrote.add(qid);
   }
 
@@ -299,7 +309,7 @@ export async function finalizeAttempt(
     );
     score += awarded;
     if (isCorrect === true) correct += 1;
-    else wrong += 1;
+    else if (isCorrect === false) wrong += 1;
     breakdown.push({
       questionId,
       type: question["type"],

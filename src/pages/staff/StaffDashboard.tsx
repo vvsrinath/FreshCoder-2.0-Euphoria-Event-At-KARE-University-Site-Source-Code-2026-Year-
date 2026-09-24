@@ -51,8 +51,12 @@ export function StaffDashboard() {
   const load = useCallback(() => {
     api
       .staffDashboard()
-      .then((res) => setData(res))
-      .catch((err) => setError(err.message));
+      .then((res) => {
+        setData(res);
+        setError(null);
+      })
+      .catch((err) => setError(err.message))
+      .finally(() => setLoading(false));
   }, []);
 
   const refreshTests = useCallback(() => {

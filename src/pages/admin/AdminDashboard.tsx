@@ -5,11 +5,14 @@ import { StatCard } from '../../components/StatCard';
 import { LoadingState } from '../../components/LoadingState';
 import { ErrorState } from '../../components/ErrorState';
 import { EmptyState } from '../../components/EmptyState';
+import { ConfirmDialog } from '../../components/ConfirmDialog';
 import { adminNav } from './adminNav';
 import { api } from '../../services/api';
 import { useLive } from '../../hooks/useLive';
 import { relativeTime, titleCase } from '../../utils/format';
 import { eventConfig } from '../../data/eventConfig';
+import { Trash2Icon } from 'lucide-react';
+import { toast } from 'sonner';
 
 const POLL_INTERVAL_MS = 15000;
 
@@ -18,6 +21,33 @@ export function AdminDashboard() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
+  const [adminTests, setAdminTests] = useState<any[]>([]);
+  const [testsLoading, setTestsLoading] = useState(true);
+  const [deleteTarget, setDeleteTarget] = useState<any | null>(null);
+  const [deleting, setDeleting] = useState(false);
+
+  const loadTests = useCallback(() => {
+    api.
+    adminTests().
+    then((res) => setAdminTests(res.tests ?? [])).
+    catch(() => undefined).
+    finally(() => setTestsLoading(false));
+  }, []);
+
+  const doDelete = async () => {
+    if (!deleteTarget) return;
+    setDeleting(true);
+    try {
+      await api.adminDeleteTest(deleteTarget.id);
+      toast.success(`Test "${deleteTarget.name}" deleted — all its attempts and results removed.`);
+      setDeleteTarget(null);
+      loadTests();
+    } catch (err) {
+      toast.error((err as Error).message);
+    } finally {
+      setDeleting(false);
+    }
+  };
 
   const load = useCallback(async (initial = false) => {
     if (initial) {
@@ -43,6 +73,10 @@ export function AdminDashboard() {
   useEffect(() => {
     load(true);
   }, [load]);
+
+  useEffect(() => {
+    loadTests();
+  }, [loadTests]);
 
   const lastUpdatedLabel = lastUpdated
     ? lastUpdated.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' })
@@ -82,6 +116,41 @@ export function AdminDashboard() {
           </div>
 
           <div className="grid gap-5 lg:grid-cols-2">
+            <Card>
+              <CardHeader title="Test data cleanup" description="Delete an old test together with all its attempts, answers and results. Live tests must be ended first." />
+              {testsLoading ?
+            <div className="p-5 text-sm text-slate-500">Loading tests…</div> :
+
+            adminTests.length === 0 ?
+            <EmptyState title="No tests to delete" /> :
+
+            <ul className="divide-y divide-slate-100">
+                  {adminTests.map((t: any) =>
+                <li key={t.id} className="flex items-center justify-between gap-4 px-5 py-3">
+                        <div className="min-w-0">
+                          <p className="truncate text-sm font-medium text-navy-800">
+                            {t.name}
+                            <span className="ml-2 rounded-full bg-slate-100 px-2 py-0.5 align-middle text-[10px] font-bold text-slate-500">{t.status}</span>
+                          </p>
+                          <p className="truncate text-xs text-slate-500">
+                            {t.id} · {t.questionCount} questions · {t.assignedStudents} assigned
+                          </p>
+                        </div>
+                        <button
+                          type="button"
+                          disabled={['ACTIVE', 'PAUSED'].includes(t.status)}
+                          onClick={() => setDeleteTarget(t)}
+                          className="inline-flex shrink-0 items-center gap-1.5 rounded-lg border border-red-200 bg-white px-3 py-1.5 text-xs font-bold text-red-600 shadow-xs hover:bg-red-50 disabled:cursor-not-allowed disabled:border-slate-200 disabled:text-slate-300"
+                        >
+                          <Trash2Icon className="h-3.5 w-3.5" />
+                          Delete
+                        </button>
+                      </li>
+                )}
+              </ul>
+            }
+            </Card>
+
             <Card>
               <CardHeader title="Recent administrative actions" />
               {(data?.recentAudit?.length ?? 0) === 0 ?
@@ -123,6 +192,16 @@ export function AdminDashboard() {
           </div>
         </div>
       }
+      <ConfirmDialog
+        open={Boolean(deleteTarget)}
+        title={`Delete ${deleteTarget?.name ?? 'test'}?`}
+        message={`This permanently removes the test and every attempt, answer and result for it — this cannot be undone.`}
+        confirmLabel="Delete permanently"
+        destructive
+        loading={deleting}
+        onConfirm={doDelete}
+        onCancel={() => setDeleteTarget(null)}
+      />
     </PortalLayout>);
 
 }

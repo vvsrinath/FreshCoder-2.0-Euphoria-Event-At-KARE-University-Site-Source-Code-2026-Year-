@@ -336,6 +336,40 @@ async function adminListTests(_ctx: RouteCtx): Promise<HttpResponse> {
   });
 }
 
+async function deleteAdminTest(ctx: RouteCtx): Promise<HttpResponse> {
+  const testId = ctx.params[0];
+  const test = await queryOne("SELECT * FROM tests WHERE id = ?", [testId]);
+  if (test === undefined) throw new ApiError(404, "Test not found.");
+  if (["ACTIVE", "PAUSED"].includes(str(test["status"]))) {
+    throw new ApiError(409, "End the test first — it is currently live.");
+  }
+  const attemptSub = "(SELECT id FROM attempts WHERE test_id = ?)";
+  const children: [string, unknown[]][] = [
+    ["DELETE FROM edit_requests WHERE attempt_id IN " + attemptSub, [testId]],
+    ["DELETE FROM results WHERE attempt_id IN " + attemptSub, [testId]],
+    ["DELETE FROM answers WHERE attempt_id IN " + attemptSub, [testId]],
+    ["DELETE FROM frozen_questions WHERE attempt_id IN " + attemptSub, [testId]],
+    ["DELETE FROM security_events WHERE attempt_id IN " + attemptSub + " OR test_id = ?", [testId, testId]],
+  ];
+  const direct: [string, unknown[]][] = [
+    ["DELETE FROM attempts WHERE test_id = ?", [testId]],
+    ["DELETE FROM timing_changes WHERE test_id = ?", [testId]],
+    ["DELETE FROM test_questions WHERE test_id = ?", [testId]],
+    ["DELETE FROM student_test_assignments WHERE test_id = ?", [testId]],
+    ["DELETE FROM audit_logs WHERE target = ?", [testId]],
+    ["DELETE FROM tests WHERE id = ?", [testId]],
+  ];
+  const counts: Record<string, number> = {};
+  for (const [sql, args] of children) {
+    counts[sql.split(" ")[2]] = await execute(sql, args);
+  }
+  for (const [sql, args] of direct) {
+    counts[sql.split(" ")[2]] = await execute(sql, args);
+  }
+  await audit(ctx.user.id, ctx.user.role, "Deleted test data", testId, str(test["name"]));
+  return ok({ ok: true, testId, name: test["name"], deleted: counts });
+}
+
 async function listAssignments(ctx: RouteCtx): Promise<HttpResponse> {
   const testId = ctx.params[0];
   if (!(await queryOne("SELECT 1 FROM tests WHERE id = ?", [testId]))) throw new ApiError(404, "Test not found.");
@@ -407,6 +441,7 @@ export const adminRoutes: RouteDef[] = [
   { method: "PUT", pattern: /^\/api\/admin\/events\/([^/]+)$/, roles: SUPER_ADMIN, handler: updateEvent },
   { method: "GET", pattern: /^\/api\/admin\/analytics$/, roles: SUPER_ADMIN, handler: analytics },
   { method: "GET", pattern: /^\/api\/admin\/tests$/, roles: SUPER_ADMIN, handler: adminListTests },
+  { method: "DELETE", pattern: /^\/api\/admin\/tests\/([^/]+)$/, roles: SUPER_ADMIN, handler: deleteAdminTest },
   { method: "GET", pattern: /^\/api\/admin\/tests\/([^/]+)\/assignments$/, roles: SUPER_ADMIN, handler: listAssignments },
   { method: "POST", pattern: /^\/api\/admin\/tests\/([^/]+)\/assign$/, roles: SUPER_ADMIN, handler: assignStudents },
   { method: "POST", pattern: /^\/api\/admin\/tests\/([^/]+)\/unassign$/, roles: SUPER_ADMIN, handler: unassignStudents },
