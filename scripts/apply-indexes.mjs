@@ -48,6 +48,19 @@ for (const qid of QUESTION_RESIDUE) {
   CLEANUPS.push(`DELETE FROM questions WHERE id = '${qid}'`);
 }
 
+// Throwaway smoke-test staff accounts (mine, never used for real data).
+// Sessions reference users via FK; actor columns in the event/audit tables
+// are plain TEXT, so their rows are removed first and then the users row.
+const STAFF_RESIDUE = ["STAFF999"];
+for (const uid of STAFF_RESIDUE) {
+  CLEANUPS.push(
+    `DELETE FROM sessions WHERE user_id = '${uid}'`,
+    `DELETE FROM security_events WHERE actor = '${uid}'`,
+    `DELETE FROM audit_logs WHERE actor = '${uid}'`,
+    `DELETE FROM users WHERE id = '${uid}'`
+  );
+}
+
 const client = createClient({
   url: url.replace(/^libsql:/, "https:"),
   authToken: token,
